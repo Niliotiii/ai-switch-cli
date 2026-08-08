@@ -8,7 +8,11 @@ export function readConfig(): AppConfig {
     return { providers: [] };
   }
   const raw = fs.readFileSync(file, "utf-8");
-  return JSON.parse(raw) as AppConfig;
+  try {
+    return JSON.parse(raw) as AppConfig;
+  } catch {
+    return { providers: [] };
+  }
 }
 
 export function writeConfig(config: AppConfig): void {

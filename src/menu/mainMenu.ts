@@ -1,12 +1,12 @@
 import { doctorFlow } from "./doctorMenu.js";
 import { listAgentsFlow } from "./listAgents.js";
 import { listModelsFlow } from "./listModels.js";
-import { registerProviderFlow } from "./registerProvider.js";
+import { manageProvidersFlow } from "./manageProviders.js";
 import { startToolFlow } from "./startTool.js";
 import { promptChoice } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
 
-type MenuOption = "start" | "register" | "models" | "agents" | "doctor" | "exit";
+type MenuOption = "start" | "manage" | "models" | "agents" | "doctor" | "exit";
 
 export async function runMainMenu(): Promise<void> {
   console.log(theme.heading("AI Switch CLI"));
@@ -16,7 +16,7 @@ export async function runMainMenu(): Promise<void> {
   while (running) {
     const choice = await promptChoice<MenuOption>("Selecione uma opção:", [
       { name: "1. Iniciar Ferramenta", value: "start" },
-      { name: "2. Cadastrar Novo Provedor", value: "register" },
+      { name: "2. Gerenciar Provedores", value: "manage" },
       { name: "3. Ver Modelos Disponíveis", value: "models" },
       { name: "4. Ver Agents Disponíveis", value: "agents" },
       { name: "5. Diagnóstico (Doctor)", value: "doctor" },
@@ -27,14 +27,14 @@ export async function runMainMenu(): Promise<void> {
       case "start":
         await startToolFlow();
         break;
-      case "register":
-        await registerProviderFlow();
+      case "manage":
+        await manageProvidersFlow();
         break;
       case "models":
         await listModelsFlow();
         break;
       case "agents":
-        listAgentsFlow();
+        await listAgentsFlow();
         break;
       case "doctor":
         await doctorFlow();

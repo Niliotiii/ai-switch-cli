@@ -89,4 +89,29 @@ describe("provider persistence", () => {
     const { updateProvider } = await import("../../src/config/providers.js");
     expect(() => updateProvider("nonexistent-id", { name: "x" })).toThrow(/not found/);
   });
+
+  it("deleteProvider removes the provider and returns it", async () => {
+    const { addProvider, deleteProvider, listProviders } = await import("../../src/config/providers.js");
+    const a = addProvider({ name: "alpha", baseUrl: "https://a.com", apiKey: "sk-a" });
+    addProvider({ name: "beta", baseUrl: "https://b.com", apiKey: "sk-b" });
+    const removed = deleteProvider(a.id);
+    expect(removed.name).toBe("alpha");
+    expect(listProviders()).toHaveLength(1);
+    expect(listProviders()[0].name).toBe("beta");
+  });
+
+  it("deleteProvider does not affect other providers' order or fields", async () => {
+    const { addProvider, deleteProvider, listProviders } = await import("../../src/config/providers.js");
+    const a = addProvider({ name: "alpha", baseUrl: "https://a.com/v1", apiKey: "sk-a" });
+    addProvider({ name: "beta", baseUrl: "https://b.com/v1", apiKey: "sk-b" });
+    deleteProvider(a.id);
+    const remaining = listProviders();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toMatchObject({ name: "beta", baseUrl: "https://b.com/v1", apiKey: "sk-b" });
+  });
+
+  it("deleteProvider throws when no provider with that id exists", async () => {
+    const { deleteProvider } = await import("../../src/config/providers.js");
+    expect(() => deleteProvider("nonexistent-id")).toThrow(/not found/);
+  });
 });

@@ -62,3 +62,14 @@ export function updateProvider(
   writeConfig(config);
   return updated;
 }
+
+export function deleteProvider(id: string): Provider {
+  const config = readConfig();
+  const index = config.providers.findIndex((p) => p.id === id);
+  if (index === -1) {
+    throw new Error(`Provider with id "${id}" not found`);
+  }
+  const [removed] = config.providers.splice(index, 1);
+  writeConfig(config);
+  return removed!;
+}

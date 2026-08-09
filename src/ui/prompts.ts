@@ -2,13 +2,20 @@ import { confirm, input, password, select } from "@inquirer/prompts";
 
 export async function promptText(
   message: string,
-  validate?: (value: string) => true | string
+  validate?: (value: string) => true | string,
+  defaultValue?: string
 ): Promise<string> {
-  return input({ message, validate });
+  const opts: { message: string; validate?: (value: string) => true | string; default?: string } = { message };
+  if (validate) opts.validate = validate;
+  if (defaultValue) opts.default = defaultValue;
+  return input(opts);
 }
 
-export async function promptSecret(message: string): Promise<string> {
-  return password({ message, mask: "*" });
+export async function promptSecret(
+  message: string,
+  defaultValue?: string
+): Promise<string> {
+  return password({ message, mask: "*", ...(defaultValue !== undefined ? { default: defaultValue } : {}) });
 }
 
 export async function promptChoice<T extends string>(

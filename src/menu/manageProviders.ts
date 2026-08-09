@@ -28,26 +28,44 @@ async function editProviderFlow(): Promise<void> {
   );
   const current = providers.find((p) => p.id === id)!;
 
-  const newName = (await promptText(`Nome [${current.name}]:`, (value) => {
-    if (!value.trim()) return "O nome não pode ser vazio";
-    return true;
-  })).trim();
-  const newBaseUrl = (await promptText(`URL base [${current.baseUrl}]:`, (value) => {
-    if (!value.trim()) return true;
-    try {
-      new URL(value);
+  const newName = await promptText(
+    `Nome [${current.name}]:`,
+    (value) => {
+      const v = value.trim() || current.name;
+      if (v === "") return "O nome não pode ser vazio";
+      if (v.toLowerCase() !== current.name.toLowerCase()) {
+        if (listProviders().some((p) => p.id !== current.id && p.name.toLowerCase() === v.toLowerCase())) {
+          return `Já existe um provedor chamado "${v}"`;
+        }
+      }
       return true;
-    } catch {
-      return "URL inválida";
-    }
-  })).trim();
-  const newApiKeyRaw = await promptSecret("API Key (pressione Enter para manter a atual):");
+    },
+    current.name
+  );
+  const newBaseUrl = await promptText(
+    `URL base [${current.baseUrl}]:`,
+    (value) => {
+      const v = value.trim() || current.baseUrl;
+      if (v === "") return true;
+      try {
+        new URL(v);
+        return true;
+      } catch {
+        return "URL inválida";
+      }
+    },
+    current.baseUrl
+  );
+  const newApiKeyRaw = await promptSecret(
+    "API Key (pressione Enter para manter a atual):",
+    current.apiKey
+  );
 
   try {
     const updated = updateProvider(current.id, {
-      name: newName,
-      baseUrl: newBaseUrl,
-      apiKey: newApiKeyRaw === "" ? undefined : newApiKeyRaw,
+      name: newName.trim() || current.name,
+      baseUrl: newBaseUrl.trim() || current.baseUrl,
+      apiKey: newApiKeyRaw === current.apiKey ? undefined : newApiKeyRaw,
     });
     console.log(theme.ok(`\nProvedor "${updated.name}" atualizado com sucesso.`));
   } catch (error) {

@@ -18,6 +18,15 @@ ai-switch
 
 Navegue pelo menu numérico para cadastrar provedores, consultar modelos, listar agentes, iniciar uma ferramenta ou rodar o diagnóstico (doctor).
 
+## Gerenciar Provedores
+
+A opção **2. Gerenciar Provedores** do menu principal abre um submenu com 4 operações:
+
+- **Listar Provedores Cadastrados** — tabela com nome, URL base e data de criação (a chave de API nunca é exibida).
+- **Cadastrar Novo Provedor** — fluxo guiado de 3 passos: nome, URL base, API key.
+- **Editar Provedor** — atualize nome, URL base e/ou API key de um provedor existente (Enter mantém o valor atual).
+- **Remover Provedor** — exclusão permanente após confirmação por digitação do nome.
+
 ## Desenvolvimento
 
 ```bash

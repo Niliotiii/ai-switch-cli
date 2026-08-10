@@ -10,7 +10,7 @@ type MenuOption = "start" | "manage" | "models" | "agents" | "doctor" | "exit";
 
 export async function runMainMenu(): Promise<void> {
   console.log(theme.heading("AI Switch CLI"));
-  console.log(theme.dim("Centralize e alterne entre provedores e ferramentas de IA.\n"));
+  console.log(theme.dim("Centralize e alterne entre provedores e agentes de IA.\n"));
 
   let running = true;
   while (running) {

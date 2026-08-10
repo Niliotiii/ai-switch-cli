@@ -4,7 +4,10 @@ import type { AgentDefinition, Provider } from "../../src/types.js";
 import { listAgentDefinitions } from "../../src/agents/catalog.js";
 
 vi.mock("node:child_process", () => ({ spawn: vi.fn() }));
-vi.mock("../../src/agents/opencode-config.js", () => ({ syncOpencodeProvider: vi.fn() }));
+vi.mock("../../src/agents/opencode-config.js", () => ({
+  syncOpencodeProvider: vi.fn(),
+  opencodeProviderKey: (p: { name: string; id: string }) => `ai-switch-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || p.id}`,
+}));
 
 const provider: Provider = {
   id: "1", name: "openrouter",

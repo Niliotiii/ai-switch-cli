@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../src/agents/opencode-config.js", () => ({ syncOpencodeProvider: vi.fn() }));
+vi.mock("../../src/agents/opencode-config.js", () => ({
+  syncOpencodeProvider: vi.fn(),
+  opencodeProviderKey: (p: { name: string; id: string }) => `ai-switch-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || p.id}`,
+}));
 
 import { getAgentDefinition, listAgentDefinitions } from "../../src/agents/catalog.js";
 
@@ -45,6 +48,11 @@ describe("agent catalog", () => {
     expect(getAgentDefinition("opencode").buildArgs(p, "gpt-4o")).toEqual(["-m", "ai-switch-openrouter/gpt-4o"]);
     expect(getAgentDefinition("copilot").buildArgs(p, "gpt-4o")).toEqual([]);
     expect(getAgentDefinition("antigravity").buildArgs(p, "x")).toEqual([]);
+  });
+
+  it("opencode buildArgs normalizes the provider name (spaces/caps safe)", () => {
+    const acme = { id: "1", name: "Acme AI", anthropicBaseUrl: null, openaiBaseUrl: "https://api.acme-ai.example/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" } as import("../../src/types.js").Provider;
+    expect(getAgentDefinition("opencode").buildArgs(acme, "acme-pro")).toEqual(["-m", "ai-switch-acme-ai/acme-pro"]);
   });
 
   it("codex is the only agent that does not require a model (requiresModel: false)", () => {

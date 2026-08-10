@@ -1,6 +1,6 @@
 import type { AgentDefinition, AgentId } from "../types.js";
 import { copilotEnv } from "../tools/env.js";
-import { syncOpencodeProvider } from "./opencode-config.js";
+import { opencodeProviderKey, syncOpencodeProvider } from "./opencode-config.js";
 
 export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
   "claude-code": {
@@ -41,7 +41,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     },
     buildArgs: (provider, model) => {
       if (!provider) throw new Error("opencode requer um provedor (buildArgs)");
-      return ["-m", `ai-switch-${provider.name}/${model}`];
+      return ["-m", `${opencodeProviderKey(provider)}/${model}`];
     },
   },
   copilot: {

@@ -14,11 +14,20 @@ export function resolveOpencodeConfigPath(): string {
   return process.env.AI_SWITCH_OPENCODE_CONFIG || path.join(homedir(), ".config", "opencode", "opencode.json");
 }
 
+// opencode -m uses the `provider/model` format and the provider key in opencode.json must be a
+// safe id (lowercase, [a-z0-9-]). A provider named "Acme AI" or "My Provider (v2!)" would otherwise
+// produce an invalid key / arg. Normalizes the name into a slug; falls back to the provider id
+// (always alphanumeric) when the name has no safe characters. The result is prefixed `ai-switch-`.
+export function opencodeProviderKey(provider: Provider): string {
+  const slug = provider.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `ai-switch-${slug || provider.id}`;
+}
+
 export function buildOpencodeProviderEntry(provider: Provider, model: string): Record<string, unknown> {
   if (!provider.openaiBaseUrl) throw new Error("Provedor não tem URL OpenAI configurada");
   return {
     npm: "@ai-sdk/openai-compatible",
-    name: `ai-switch-${provider.name}`,
+    name: opencodeProviderKey(provider),
     options: { baseURL: provider.openaiBaseUrl, apiKey: provider.apiKey },
     models: { [model]: { name: model } },
   };
@@ -40,8 +49,8 @@ export function syncOpencodeProvider(provider: Provider, model: string): void {
     config = { $schema: OPENCODE_SCHEMA, provider: {} };
   }
   if (!config.provider) config.provider = {};
-  // Idempotent: overwrite only the ai-switch-<name> key; preserve $schema + all other providers.
-  config.provider[`ai-switch-${provider.name}`] = buildOpencodeProviderEntry(provider, model);
+  // Idempotent: overwrite only the ai-switch-<slug> key; preserve $schema + all other providers.
+  config.provider[opencodeProviderKey(provider)] = buildOpencodeProviderEntry(provider, model);
   mkdirSync(path.dirname(cfgPath), { recursive: true });
   writeFileSync(cfgPath, JSON.stringify(config, null, 2));
 }

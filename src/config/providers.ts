@@ -10,14 +10,23 @@ export function providerNameExists(name: string): boolean {
   return listProviders().some((p) => p.name.toLowerCase() === name.toLowerCase());
 }
 
-export function addProvider(input: { name: string; baseUrl: string; apiKey: string }): Provider {
+export function addProvider(input: {
+  name: string;
+  anthropicBaseUrl: string | null;
+  openaiBaseUrl: string | null;
+  apiKey: string;
+}): Provider {
   if (providerNameExists(input.name)) {
     throw new Error(`Provider "${input.name}" already exists`);
+  }
+  if (!input.anthropicBaseUrl && !input.openaiBaseUrl) {
+    throw new Error("Informe pelo menos uma URL (Anthropic ou OpenAI)");
   }
   const provider: Provider = {
     id: randomUUID(),
     name: input.name,
-    baseUrl: input.baseUrl.replace(/\/+$/, ""),
+    anthropicBaseUrl: input.anthropicBaseUrl ? input.anthropicBaseUrl.replace(/\/+$/, "") : null,
+    openaiBaseUrl: input.openaiBaseUrl ? input.openaiBaseUrl.replace(/\/+$/, "") : null,
     apiKey: input.apiKey,
     createdAt: new Date().toISOString(),
   };
@@ -33,7 +42,7 @@ export function getProviderByName(name: string): Provider | undefined {
 
 export function updateProvider(
   id: string,
-  changes: { name?: string; baseUrl?: string; apiKey?: string }
+  changes: { name?: string; anthropicBaseUrl?: string | null; openaiBaseUrl?: string | null; apiKey?: string }
 ): Provider {
   const config = readConfig();
   const index = config.providers.findIndex((p) => p.id === id);
@@ -50,12 +59,16 @@ export function updateProvider(
       throw new Error(`Provider "${nextName}" already exists`);
     }
   }
-  const nextBaseUrl =
-    changes.baseUrl !== undefined ? changes.baseUrl.replace(/\/+$/, "") : current.baseUrl;
+  const nextAnthropic = changes.anthropicBaseUrl !== undefined ? changes.anthropicBaseUrl : current.anthropicBaseUrl;
+  const nextOpenai = changes.openaiBaseUrl !== undefined ? changes.openaiBaseUrl : current.openaiBaseUrl;
+  if (!nextAnthropic && !nextOpenai) {
+    throw new Error("Informe pelo menos uma URL (Anthropic ou OpenAI)");
+  }
   const updated: Provider = {
     ...current,
     name: nextName,
-    baseUrl: nextBaseUrl,
+    anthropicBaseUrl: nextAnthropic ? nextAnthropic.replace(/\/+$/, "") : null,
+    openaiBaseUrl: nextOpenai ? nextOpenai.replace(/\/+$/, "") : null,
     apiKey: changes.apiKey ?? current.apiKey,
   };
   config.providers[index] = updated;

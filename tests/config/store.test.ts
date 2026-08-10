@@ -26,7 +26,7 @@ describe("config store", () => {
     const { getConfigFile } = await import("../../src/config/paths.js");
     writeConfig({
       providers: [
-        { id: "1", name: "openrouter", baseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" },
+        { id: "1", name: "openrouter", anthropicBaseUrl: "https://openrouter.ai/api/v1", openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" },
       ],
     });
     expect(readConfig().providers).toHaveLength(1);

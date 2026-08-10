@@ -14,7 +14,8 @@ export interface Model {
 export type AgentId = "claude-code" | "codex" | "opencode" | "copilot" | "antigravity";
 export type AuthStrategy = "env-inject" | "self-contained";
 export type EnvBuilder = (provider: Provider, model: string) => Record<string, string>;
-export type ArgsBuilder = (model: string) => string[];
+export type ArgsBuilder = (provider: Provider | null, model: string) => string[];
+export type PrepareLaunch = (provider: Provider, model: string) => void | Promise<void>;
 export interface AgentDefinition {
   id: AgentId;
   label: string;
@@ -24,8 +25,9 @@ export interface AgentDefinition {
   envProtocol: "anthropic" | "openai" | null; // null se, e somente se, authStrategy === "self-contained"
   homepage: string;
   envBuilder?: EnvBuilder; // custom env vars; when absent, buildAgentEnv falls back to anthropicEnv/openaiEnv by envProtocol
-  buildArgs: ArgsBuilder; // CLI args for the model; env-inject agents use it; self-contained return []
+  buildArgs: ArgsBuilder; // CLI args; takes (provider, model) — most agents ignore provider; opencode uses it for the provider-name prefix
   requiresModel?: boolean; // false when the agent ignores a passed model (e.g. codex reads ~/.codex/config.toml); default true for env-inject agents
+  prepareLaunch?: PrepareLaunch; // side-effect hook run before spawn (e.g. write opencode.json); env-inject agents that need a config file instead of env vars
 }
 export interface AgentStatus {
   definition: AgentDefinition;

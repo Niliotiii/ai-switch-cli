@@ -36,11 +36,12 @@ describe("agent catalog", () => {
   });
 
   it("buildArgs produce the expected per-agent CLI args", () => {
-    expect(getAgentDefinition("claude-code").buildArgs("claude-sonnet-5")).toEqual(["--model", "claude-sonnet-5"]);
-    expect(getAgentDefinition("codex").buildArgs("gpt-4o")).toEqual([]);
-    expect(getAgentDefinition("opencode").buildArgs("gpt-4o")).toEqual(["-m", "openai/gpt-4o"]);
-    expect(getAgentDefinition("copilot").buildArgs("gpt-4o")).toEqual([]);
-    expect(getAgentDefinition("antigravity").buildArgs("x")).toEqual([]);
+    const p = { id: "1", name: "openrouter", anthropicBaseUrl: "https://anthropic.example.com", openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" } as import("../../src/types.js").Provider;
+    expect(getAgentDefinition("claude-code").buildArgs(p, "claude-sonnet-5")).toEqual(["--model", "claude-sonnet-5"]);
+    expect(getAgentDefinition("codex").buildArgs(p, "gpt-4o")).toEqual([]);
+    expect(getAgentDefinition("opencode").buildArgs(p, "gpt-4o")).toEqual(["-m", "openai/gpt-4o"]); // TEMPORARY — Task 2 changes to ai-switch-openrouter/gpt-4o
+    expect(getAgentDefinition("copilot").buildArgs(p, "gpt-4o")).toEqual([]);
+    expect(getAgentDefinition("antigravity").buildArgs(p, "x")).toEqual([]);
   });
 
   it("codex is the only agent that does not require a model (requiresModel: false)", () => {

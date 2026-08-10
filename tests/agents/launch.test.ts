@@ -4,6 +4,7 @@ import type { AgentDefinition, Provider } from "../../src/types.js";
 import { listAgentDefinitions } from "../../src/agents/catalog.js";
 
 vi.mock("node:child_process", () => ({ spawn: vi.fn() }));
+vi.mock("../../src/agents/opencode-config.js", () => ({ syncOpencodeProvider: vi.fn() }));
 
 const provider: Provider = {
   id: "1", name: "openrouter",
@@ -39,6 +40,11 @@ describe("agent launch", () => {
     }
   });
 
+  it("buildAgentEnv: opencode (prepareLaunch-based) retorna {} — config file é o mecanismo, não env", async () => {
+    const { buildAgentEnv } = await import("../../src/agents/launch.js");
+    expect(buildAgentEnv(def("opencode"), provider, "gpt-4o")).toEqual({});
+  });
+
   it("buildAgentEnv: env-inject com provider null retorna {}", async () => {
     const { buildAgentEnv } = await import("../../src/agents/launch.js");
     expect(buildAgentEnv(def("claude-code"), null, "x")).toEqual({});
@@ -63,21 +69,25 @@ describe("agent launch", () => {
     await expect(p).resolves.toBe(0);
   });
 
-  it("launchAgent faz spawn do opencode com OPENAI env e -m openai/<model>", async () => {
+  it("launchAgent: opencode chama syncOpencodeProvider (prepareLaunch) e faz spawn com -m ai-switch-<name>/<model>, sem OPENAI env", async () => {
     const realEnv = process.env;
     process.env = { PATH: "/usr/bin" };
     try {
       const { spawn } = await import("node:child_process");
+      const { syncOpencodeProvider } = await import("../../src/agents/opencode-config.js");
       const fakeChild = new EventEmitter();
       (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
       const { launchAgent } = await import("../../src/agents/launch.js");
       const p = launchAgent(def("opencode"), provider, "gpt-4o");
+      // prepareLaunch is awaited inside launchAgent — flush the microtask so spawn runs before we assert.
+      await new Promise((r) => setImmediate(r));
+      expect(syncOpencodeProvider).toHaveBeenCalledWith(provider, "gpt-4o");
       const call = (spawn as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
       expect(call[0]).toBe("opencode");
-      expect(call[1]).toEqual(["-m", "openai/gpt-4o"]);
+      expect(call[1]).toEqual(["-m", "ai-switch-openrouter/gpt-4o"]);
       const env = (call[2] as { env: Record<string, string> }).env;
-      expect(env.OPENAI_API_KEY).toBe("sk-x");
-      expect(env.OPENAI_BASE_URL).toBe("https://openrouter.ai/api/v1");
+      expect(env.OPENAI_API_KEY).toBeUndefined();
+      expect(env.OPENAI_BASE_URL).toBeUndefined();
       fakeChild.emit("exit", 0);
       await expect(p).resolves.toBe(0);
     } finally {

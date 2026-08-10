@@ -22,15 +22,19 @@ A aplicação **detecta automaticamente** quais agentes de codificação por IA 
 
 - **Ver Agents Disponíveis** (menu 4) lista os 5 agentes com status `instalado`/`não instalado`, o binário sondado e, para os que faltam, a homepage de instalação.
 - **Iniciar Agent** (menu 1) oferece apenas os agentes detectados como instalados. O comportamento de lançamento depende do agente:
-  - **Env-inject** (Claude Code → Anthropic, Codex → OpenAI): você seleciona um provedor cadastrado; o CLI valida que o provedor tem a URL do protocolo correspondente e lança o agente com as env vars (`ANTHROPIC_*` ou `OPENAI_*`) apontando para ele. O agente escolhe o próprio modelo.
-  - **Self-contained** (opencode, GitHub Copilot CLI, Antigravity): esses agentes gerenciam a própria autenticação (`opencode providers`, `~/.copilot`, orquestração do Google) e são lançados diretamente, sem provedor.
+  - **Env-inject** (Claude Code, OpenAI Codex, opencode, GitHub Copilot CLI): você seleciona um provedor cadastrado e um modelo; o CLI valida que o provedor tem a URL do protocolo correspondente e lança o agente com as env vars apontando para ele. O modelo é listado automaticamente do provedor (com fallback para entrada manual). Cada agente recebe as env vars e a flag de modelo apropriadas:
+    - **Claude Code** (`ANTHROPIC_*`, flag `--model`) — roteado pela URL Anthropic do provedor.
+    - **OpenAI Codex** (`OPENAI_*`, sem flag de modelo) — roteado pela URL OpenAI; o modelo vem do `~/.codex/config.toml`.
+    - **opencode** (`OPENAI_*`, flag `-m openai/<modelo>`) — roteado pela URL OpenAI; o prefixo `openai/` é exigido pelo formato `provider/model` do opencode.
+    - **GitHub Copilot CLI** (`COPILOT_PROVIDER_*` + `COPILOT_MODEL` no env) — roteado pela URL OpenAI; o modelo vai em `COPILOT_MODEL` (BYOK do Copilot), sem flag de args.
+  - **Self-contained** (Antigravity): gerencia a própria autenticação (orquestração do Google) e é lançado diretamente, sem provedor nem modelo.
 
 | Agente | Binário | Auth | Homepage |
 | --- | --- | --- | --- |
 | Claude Code | `claude` | env-inject (Anthropic) | https://claude.ai/claude-code |
 | OpenAI Codex | `codex` | env-inject (OpenAI) | https://github.com/openai/codex |
-| opencode | `opencode` | self-contained | https://opencode.ai |
-| GitHub Copilot CLI | `copilot` | self-contained | https://github.com/github/copilot-cli |
+| opencode | `opencode` | env-inject (OpenAI) | https://opencode.ai |
+| GitHub Copilot CLI | `copilot` | env-inject (OpenAI, `COPILOT_PROVIDER_*`) | https://github.com/github/copilot-cli |
 | Antigravity | `antigravity` | self-contained | https://antigravity.google |
 
 Cada provedor cadastrado pode ter duas URLs base: uma para o **protocolo Anthropic** e uma para o **protocolo OpenAI**. Informe pelo menos uma delas ao cadastrar. Ao iniciar um agente env-inject, o provedor precisa ter a URL do protocolo correspondente — caso contrário a operação é bloqueada com um aviso claro.

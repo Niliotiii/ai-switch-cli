@@ -39,3 +39,21 @@ describe("agent catalog", () => {
     expect(() => getAgentDefinition("unknown")).toThrow(/Unknown agent/);
   });
 });
+
+describe("agent definition fields", () => {
+  it("every agent has a buildArgs function", () => {
+    for (const a of listAgentDefinitions()) {
+      expect(typeof a.buildArgs).toBe("function");
+    }
+  });
+
+  it("only copilot has a custom envBuilder; the others rely on envProtocol fallback", () => {
+    for (const a of listAgentDefinitions()) {
+      if (a.id === "copilot") {
+        expect(a.envBuilder).toBeDefined();
+      } else {
+        expect(a.envBuilder).toBeUndefined();
+      }
+    }
+  });
+});

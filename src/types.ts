@@ -13,6 +13,8 @@ export interface Model {
 
 export type AgentId = "claude-code" | "codex" | "opencode" | "copilot" | "antigravity";
 export type AuthStrategy = "env-inject" | "self-contained";
+export type EnvBuilder = (provider: Provider, model: string) => Record<string, string>;
+export type ArgsBuilder = (model: string) => string[];
 export interface AgentDefinition {
   id: AgentId;
   label: string;
@@ -21,6 +23,8 @@ export interface AgentDefinition {
   authStrategy: AuthStrategy;
   envProtocol: "anthropic" | "openai" | null; // null se, e somente se, authStrategy === "self-contained"
   homepage: string;
+  envBuilder?: EnvBuilder; // custom env vars; when absent, buildAgentEnv falls back to anthropicEnv/openaiEnv by envProtocol
+  buildArgs: ArgsBuilder; // CLI args for the model; env-inject agents use it; self-contained return []
 }
 export interface AgentStatus {
   definition: AgentDefinition;

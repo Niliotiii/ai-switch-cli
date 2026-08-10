@@ -69,6 +69,27 @@ describe("startToolFlow", () => {
     expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("claude-code"), provider, "claude-sonnet-5");
   });
 
+  it("agente env-inject com requiresModel false (codex) pede provedor mas NÃO pede modelo", async () => {
+    const { detectAgents } = await import("../../src/agents/detect.js");
+    (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
+      { definition: getAgentDefinition("codex"), installed: true },
+    ]);
+    const { select } = await import("@inquirer/prompts");
+    // Only TWO select calls: agent, then provider. No model prompt.
+    (select as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce("codex")
+      .mockResolvedValueOnce("openrouter");
+    const { listProviders } = await import("../../src/config/providers.js");
+    (listProviders as unknown as ReturnType<typeof vi.fn>).mockReturnValue([provider]);
+    const { fetchModels } = await import("../../src/discovery/models.js");
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const { startToolFlow } = await import("../../src/menu/startTool.js");
+    await startToolFlow();
+    expect(fetchModels).not.toHaveBeenCalled();
+    expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("codex"), provider, "");
+  });
+
   it("env-inject: usa promptText (entrada manual) quando fetchModels falha", async () => {
     vi.resetModules();
     const { getAgentDefinition: getDef } = await import("../../src/agents/catalog.js");

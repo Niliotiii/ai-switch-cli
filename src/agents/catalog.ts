@@ -21,6 +21,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     envProtocol: "openai",
     homepage: "https://github.com/openai/codex",
     buildArgs: () => [], // model comes from ~/.codex/config.toml
+    requiresModel: false, // codex reads its model from ~/.codex/config.toml; the menu must not prompt for one
   },
   opencode: {
     id: "opencode",

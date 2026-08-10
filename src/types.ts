@@ -25,6 +25,7 @@ export interface AgentDefinition {
   homepage: string;
   envBuilder?: EnvBuilder; // custom env vars; when absent, buildAgentEnv falls back to anthropicEnv/openaiEnv by envProtocol
   buildArgs: ArgsBuilder; // CLI args for the model; env-inject agents use it; self-contained return []
+  requiresModel?: boolean; // false when the agent ignores a passed model (e.g. codex reads ~/.codex/config.toml); default true for env-inject agents
 }
 export interface AgentStatus {
   definition: AgentDefinition;

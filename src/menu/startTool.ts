@@ -42,7 +42,9 @@ export async function startToolFlow(): Promise<void> {
       return;
     }
     provider = selected;
-    model = await selectModel(selected);
+    if (agent.requiresModel !== false) {
+      model = await selectModel(selected);
+    }
   }
 
   console.log(theme.ok(`\nIniciando ${agent.label}...\n`));

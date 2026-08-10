@@ -43,6 +43,16 @@ describe("agent catalog", () => {
     expect(getAgentDefinition("antigravity").buildArgs("x")).toEqual([]);
   });
 
+  it("codex is the only agent that does not require a model (requiresModel: false)", () => {
+    for (const a of listAgentDefinitions()) {
+      if (a.id === "codex") {
+        expect(a.requiresModel).toBe(false);
+      } else {
+        expect(a.requiresModel ?? true).toBe(true);
+      }
+    }
+  });
+
   it("copilot envBuilder emite COPILOT_PROVIDER_* com o modelo", () => {
     const provider = { id: "1", name: "p", anthropicBaseUrl: null, openaiBaseUrl: "https://api.example.com/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" } as const;
     expect(getAgentDefinition("copilot").envBuilder!(provider, "gpt-4o")).toEqual({

@@ -6,7 +6,8 @@ describe("types", () => {
     const provider: Provider = {
       id: "1",
       name: "test",
-      baseUrl: "https://example.com",
+      anthropicBaseUrl: "https://example.com",
+      openaiBaseUrl: null,
       apiKey: "sk-test",
       createdAt: new Date().toISOString(),
     };

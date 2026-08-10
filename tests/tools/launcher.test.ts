@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Provider, ToolDefinition } from "../../src/types.js";
+import type { Provider } from "../../src/types.js";
 
 vi.mock("node:child_process", () => ({
   spawnSync: vi.fn(),
@@ -10,19 +10,16 @@ vi.mock("node:child_process", () => ({
 const provider: Provider = {
   id: "1",
   name: "test",
-  baseUrl: "https://api.example.com",
+  anthropicBaseUrl: "https://api.example.com",
+  openaiBaseUrl: null,
   apiKey: "sk-x",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-const tool: ToolDefinition = {
-  id: "claude-code",
-  label: "Claude Code",
-  binary: "claude",
-  versionArgs: ["--version"],
-  buildEnv: (p) => ({ ANTHROPIC_API_KEY: p.apiKey, ANTHROPIC_BASE_URL: p.baseUrl }),
-  buildArgs: (_model, extra) => [...extra],
-};
+// Use the real claude-code tool from the registry so the test exercises the
+// production buildEnv (anthropicEnv, which throws on a null anthropicBaseUrl).
+import { getTool } from "../../src/tools/registry.js";
+const tool = getTool("claude-code");
 
 beforeEach(() => {
   vi.resetAllMocks();

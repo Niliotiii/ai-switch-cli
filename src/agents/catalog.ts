@@ -39,7 +39,10 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
       if (!provider.openaiBaseUrl) throw new Error("Provedor não tem URL OpenAI configurada");
       syncOpencodeProvider(provider, model);
     },
-    buildArgs: (provider, model) => ["-m", `ai-switch-${provider.name}/${model}`],
+    buildArgs: (provider, model) => {
+      if (!provider) throw new Error("opencode requer um provedor (buildArgs)");
+      return ["-m", `ai-switch-${provider.name}/${model}`];
+    },
   },
   copilot: {
     id: "copilot",

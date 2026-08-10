@@ -1,47 +1,49 @@
-import { doctorFlow } from "./doctorMenu.js";
-import { listAgentsFlow } from "./listAgents.js";
-import { listModelsFlow } from "./listModels.js";
-import { manageProvidersFlow } from "./manageProviders.js";
-import { startToolFlow } from "./startTool.js";
-import { promptChoice } from "../ui/prompts.js";
-import { theme } from "../ui/theme.js";
+import { promptChoice } from '../ui/prompts.js';
+import { theme } from '../ui/theme.js';
+import { doctorFlow } from './doctorMenu.js';
+import { listAgentsFlow } from './listAgents.js';
+import { listModelsFlow } from './listModels.js';
+import { manageProvidersFlow } from './manageProviders.js';
+import { startToolFlow } from './startTool.js';
 
-type MenuOption = "start" | "manage" | "models" | "agents" | "doctor" | "exit";
+type MenuOption = 'start' | 'manage' | 'models' | 'agents' | 'doctor' | 'exit';
 
 export async function runMainMenu(): Promise<void> {
-  console.log(theme.heading("AI Switch CLI"));
-  console.log(theme.dim("Centralize e alterne entre provedores e agentes de IA.\n"));
+  console.log(theme.heading('AI Switch CLI'));
+  console.log(
+    theme.dim('Centralize e alterne entre provedores e agentes de IA.\n'),
+  );
 
   let running = true;
   while (running) {
-    const choice = await promptChoice<MenuOption>("Selecione uma opção:", [
-      { name: "1. Iniciar Agent", value: "start" },
-      { name: "2. Gerenciar Provedores", value: "manage" },
-      { name: "3. Ver Modelos Disponíveis", value: "models" },
-      { name: "4. Ver Agents Disponíveis", value: "agents" },
-      { name: "5. Diagnóstico (Doctor)", value: "doctor" },
-      { name: "6. Sair", value: "exit" },
+    const choice = await promptChoice<MenuOption>('Selecione uma opção:', [
+      { name: '1. Iniciar Agent', value: 'start' },
+      { name: '2. Gerenciar Provedores', value: 'manage' },
+      { name: '3. Ver Modelos', value: 'models' },
+      { name: '4. Ver Agents', value: 'agents' },
+      { name: '5. Diagnóstico', value: 'doctor' },
+      { name: '6. Sair', value: 'exit' },
     ]);
 
     switch (choice) {
-      case "start":
+      case 'start':
         await startToolFlow();
         break;
-      case "manage":
+      case 'manage':
         await manageProvidersFlow();
         break;
-      case "models":
+      case 'models':
         await listModelsFlow();
         break;
-      case "agents":
+      case 'agents':
         await listAgentsFlow();
         break;
-      case "doctor":
+      case 'doctor':
         await doctorFlow();
         break;
-      case "exit":
+      case 'exit':
         running = false;
-        console.log(theme.dim("\nAté logo!"));
+        console.log(theme.dim('\nAté logo!'));
         break;
     }
   }

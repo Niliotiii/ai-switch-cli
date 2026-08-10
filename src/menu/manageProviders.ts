@@ -123,11 +123,11 @@ export async function manageProvidersFlow(): Promise<void> {
   let inSubmenu = true;
   while (inSubmenu) {
     const choice = await promptChoice<SubmenuOption>("Selecione uma opção:", [
-      { name: "1. Listar Provedores Cadastrados", value: "list" },
-      { name: "2. Cadastrar Novo Provedor", value: "register" },
-      { name: "3. Editar Provedor", value: "edit" },
-      { name: "4. Remover Provedor", value: "delete" },
-      { name: "0. Voltar ao menu principal", value: "back" },
+      { name: "1. Listar", value: "list" },
+      { name: "2. Cadastrar", value: "register" },
+      { name: "3. Editar", value: "edit" },
+      { name: "4. Remover", value: "delete" },
+      { name: "0. Voltar", value: "back" },
     ]);
 
     switch (choice) {

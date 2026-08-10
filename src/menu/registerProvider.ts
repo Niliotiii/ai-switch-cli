@@ -2,6 +2,11 @@ import { addProvider, providerNameExists } from "../config/providers.js";
 import { promptSecret, promptText } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
 
+function normalizeUrl(value: string): string | null {
+  const v = value.trim();
+  return v === "" ? null : v;
+}
+
 export async function registerProviderFlow(): Promise<void> {
   console.log(theme.heading("\nCadastrar Novo Provedor"));
 
@@ -11,17 +16,34 @@ export async function registerProviderFlow(): Promise<void> {
     return true;
   });
 
-  const baseUrl = await promptText("URL base do serviço (ex: https://openrouter.ai/api/v1):", (value) => {
-    try {
-      new URL(value);
-      return true;
-    } catch {
-      return "URL inválida";
+  const anthropicRaw = await promptText(
+    "URL base Anthropic (Enter para pular se o provedor não usar este protocolo):",
+    (value) => {
+      if (!value.trim()) return true;
+      try { new URL(value); return true; } catch { return "URL inválida"; }
     }
-  });
+  );
+  const openaiRaw = await promptText(
+    "URL base OpenAI (Enter para pular se o provedor não usar este protocolo):",
+    (value) => {
+      if (!value.trim()) return true;
+      try { new URL(value); return true; } catch { return "URL inválida"; }
+    }
+  );
+
+  const anthropicBaseUrl = normalizeUrl(anthropicRaw);
+  const openaiBaseUrl = normalizeUrl(openaiRaw);
+  if (!anthropicBaseUrl && !openaiBaseUrl) {
+    console.log(theme.fail("Informe pelo menos uma URL (Anthropic ou OpenAI)."));
+    return;
+  }
 
   const apiKey = await promptSecret("Chave de autenticação (API Key):");
 
-  const provider = addProvider({ name: name.trim(), baseUrl: baseUrl.trim(), apiKey });
-  console.log(theme.ok(`\nProvedor "${provider.name}" cadastrado com sucesso.`));
+  try {
+    const provider = addProvider({ name: name.trim(), anthropicBaseUrl, openaiBaseUrl, apiKey });
+    console.log(theme.ok(`\nProvedor "${provider.name}" cadastrado com sucesso.`));
+  } catch (error) {
+    console.log(theme.fail(`Falha ao cadastrar: ${error instanceof Error ? error.message : error}`));
+  }
 }

@@ -9,10 +9,14 @@ Cadastre provedores de IA uma vez e dispare qualquer agente de codificação ins
 ## Instalação
 
 ```bash
-npm install
-npm run build
-npm link
+npm install -g ai-switch-cli
 ai-switch
+```
+
+Ou rode uma vez sem instalar:
+
+```bash
+npx ai-switch-cli
 ```
 
 Requer Node.js >= 18.
@@ -50,10 +54,15 @@ O submenu **Gerenciar Provedores** oferece: listar (sem expor a API key), cadast
 
 ## Desenvolvimento
 
+Para contribuir ou rodar a partir do código-fonte:
+
 ```bash
+git clone <repo> && cd ai-switch-cli
+npm install
 npm run dev        # roda via tsx, sem build
 npm test           # vitest
 npm run typecheck  # tsc --noEmit
+npm run build      # gera dist/
 ```
 
 Configuração persistida em `~/.config/ai-switch/config.json` (permissão `0600`). Sobrescreva o diretório com a env var `AI_SWITCH_CONFIG_DIR` (usado pelos testes).

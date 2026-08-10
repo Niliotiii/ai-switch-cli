@@ -1,6 +1,6 @@
 import { listProviders } from '../config/providers.js';
 import { fetchModels } from '../discovery/models.js';
-import { promptChoice } from '../ui/prompts.js';
+import { promptChoiceWithBack } from '../ui/prompts.js';
 import { renderTable } from '../ui/table.js';
 import { theme } from '../ui/theme.js';
 
@@ -17,10 +17,11 @@ export async function listModelsFlow(): Promise<void> {
     return;
   }
 
-  const providerName = await promptChoice(
+  const providerName = await promptChoiceWithBack(
     'Selecione o provedor:',
     providers.map((p) => ({ name: p.name, value: p.name })),
   );
+  if (providerName === null) return; // Voltar → menu principal
   const provider = providers.find((p) => p.name === providerName)!;
 
   try {

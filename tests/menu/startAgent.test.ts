@@ -19,6 +19,21 @@ const provider: Provider = { id: "1", name: "openrouter", anthropicBaseUrl: "htt
 beforeEach(() => { vi.clearAllMocks(); });
 
 describe("startToolFlow", () => {
+  it("Voltar na seleção do agente cancela o fluxo (não lança)", async () => {
+    const { BACK } = await import("../../src/ui/prompts.js");
+    const { detectAgents } = await import("../../src/agents/detect.js");
+    (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
+      { definition: getAgentDefinition("antigravity"), installed: true },
+    ]);
+    const { select } = await import("@inquirer/prompts");
+    (select as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(BACK);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const { startToolFlow } = await import("../../src/menu/startTool.js");
+    await startToolFlow();
+    expect(launchAgent).not.toHaveBeenCalled();
+  });
+
   it("imprime mensagem clara e retorna quando nenhum agente está instalado", async () => {
     const { detectAgents } = await import("../../src/agents/detect.js");
     (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([]);
@@ -97,7 +112,7 @@ describe("startToolFlow", () => {
     vi.doMock("../../src/config/providers.js", () => ({ listProviders: vi.fn(() => [provider]) }));
     vi.doMock("../../src/discovery/models.js", () => ({ fetchModels: vi.fn(() => Promise.reject(new Error("HTTP 401"))) }));
     vi.doMock("../../src/ui/prompts.js", () => ({
-      promptChoice: vi.fn(async (_msg: string, choices: Array<{ value: string }>) => choices[0].value),
+      promptChoiceWithBack: vi.fn(async (_msg: string, choices: Array<{ value: string }>) => choices[0].value),
       promptText: vi.fn(async () => "manual-model"),
     }));
     vi.doMock("../../src/agents/launch.js", () => ({ launchAgent: vi.fn(() => Promise.resolve(0)) }));

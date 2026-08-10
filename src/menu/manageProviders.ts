@@ -1,10 +1,10 @@
 import { deleteProvider, listProviders, updateProvider } from "../config/providers.js";
-import { promptChoice, promptSecret, promptText } from "../ui/prompts.js";
+import { promptChoiceWithBack, promptSecret, promptText } from "../ui/prompts.js";
 import { renderTable } from "../ui/table.js";
 import { theme } from "../ui/theme.js";
 import { registerProviderFlow } from "./registerProvider.js";
 
-type SubmenuOption = "list" | "register" | "edit" | "delete" | "back";
+type SubmenuOption = "list" | "register" | "edit" | "delete";
 
 async function listProvidersFlow(): Promise<void> {
   const providers = listProviders();
@@ -27,10 +27,11 @@ async function editProviderFlow(): Promise<void> {
     console.log(theme.fail("Nenhum provedor cadastrado para editar."));
     return;
   }
-  const id = await promptChoice(
+  const id = await promptChoiceWithBack(
     "Selecione o provedor a editar:",
     providers.map((p) => ({ name: p.name, value: p.id }))
   );
+  if (id === null) return; // Voltar → submenu Gerenciar Provedores
   const current = providers.find((p) => p.id === id)!;
 
   const newName = await promptText(
@@ -96,10 +97,11 @@ async function deleteProviderFlow(): Promise<void> {
     console.log(theme.fail("Nenhum provedor cadastrado para remover."));
     return;
   }
-  const id = await promptChoice(
+  const id = await promptChoiceWithBack(
     "Selecione o provedor a remover:",
     providers.map((p) => ({ name: p.name, value: p.id }))
   );
+  if (id === null) return; // Voltar → submenu Gerenciar Provedores
   const target = providers.find((p) => p.id === id)!;
   const confirmPhrase = `remover ${target.name}`;
   const typed = await promptText(
@@ -122,14 +124,17 @@ export async function manageProvidersFlow(): Promise<void> {
 
   let inSubmenu = true;
   while (inSubmenu) {
-    const choice = await promptChoice<SubmenuOption>("Selecione uma opção:", [
+    const choice = await promptChoiceWithBack<SubmenuOption>("Selecione uma opção:", [
       { name: "1. Listar", value: "list" },
       { name: "2. Cadastrar", value: "register" },
       { name: "3. Editar", value: "edit" },
       { name: "4. Remover", value: "delete" },
-      { name: "0. Voltar", value: "back" },
     ]);
 
+    if (choice === null) {
+      inSubmenu = false; // Voltar → menu principal
+      continue;
+    }
     switch (choice) {
       case "list":
         await listProvidersFlow();
@@ -142,9 +147,6 @@ export async function manageProvidersFlow(): Promise<void> {
         break;
       case "delete":
         await deleteProviderFlow();
-        break;
-      case "back":
-        inSubmenu = false;
         break;
     }
   }

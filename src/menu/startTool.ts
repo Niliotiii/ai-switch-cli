@@ -3,7 +3,7 @@ import { getAgentDefinition } from "../agents/catalog.js";
 import { detectAgents } from "../agents/detect.js";
 import { launchAgent } from "../agents/launch.js";
 import { fetchModels } from "../discovery/models.js";
-import { promptChoice, promptText } from "../ui/prompts.js";
+import { promptChoiceWithBack, promptText } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
 import type { Provider } from "../types.js";
 
@@ -16,10 +16,11 @@ export async function startToolFlow(): Promise<void> {
     return;
   }
 
-  const agentId = await promptChoice(
+  const agentId = await promptChoiceWithBack(
     "Selecione o agente:",
     installed.map((s) => ({ name: s.definition.label, value: s.definition.id }))
   );
+  if (agentId === null) return; // Voltar → menu principal
   const agent = getAgentDefinition(agentId);
 
   let provider = null;
@@ -30,10 +31,11 @@ export async function startToolFlow(): Promise<void> {
       console.log(theme.fail("Nenhum provedor cadastrado. Use \"Gerenciar Provedores\" primeiro."));
       return;
     }
-    const providerName = await promptChoice(
+    const providerName = await promptChoiceWithBack(
       "Selecione o provedor:",
       providers.map((p) => ({ name: p.name, value: p.name }))
     );
+    if (providerName === null) return; // Voltar → menu principal
     const selected = providers.find((p) => p.name === providerName)!;
     const url = agent.envProtocol === "anthropic" ? selected.anthropicBaseUrl : selected.openaiBaseUrl;
     if (!url) {
@@ -43,7 +45,9 @@ export async function startToolFlow(): Promise<void> {
     }
     provider = selected;
     if (agent.requiresModel !== false) {
-      model = await selectModel(selected);
+      const selectedModel = await selectModel(selected);
+      if (selectedModel === null) return; // Voltar → menu principal
+      model = selectedModel;
     }
   }
 
@@ -54,11 +58,11 @@ export async function startToolFlow(): Promise<void> {
   }
 }
 
-async function selectModel(provider: Provider): Promise<string> {
+async function selectModel(provider: Provider): Promise<string | null> {
   try {
     const models = await fetchModels(provider);
     if (models.length === 0) throw new Error("nenhum modelo retornado");
-    return await promptChoice(
+    return await promptChoiceWithBack(
       "Selecione o modelo:",
       models.map((m) => ({ name: m.id, value: m.id }))
     );

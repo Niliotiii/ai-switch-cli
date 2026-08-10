@@ -15,7 +15,7 @@ export async function runMainMenu(): Promise<void> {
   let running = true;
   while (running) {
     const choice = await promptChoice<MenuOption>("Selecione uma opção:", [
-      { name: "1. Iniciar Ferramenta", value: "start" },
+      { name: "1. Iniciar Agent", value: "start" },
       { name: "2. Gerenciar Provedores", value: "manage" },
       { name: "3. Ver Modelos Disponíveis", value: "models" },
       { name: "4. Ver Agents Disponíveis", value: "agents" },

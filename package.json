@@ -1,6 +1,6 @@
 {
   "name": "ai-switch-cli",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Universal CLI to switch between AI dev tools and providers",
   "license": "MIT",
   "author": "Danilo Saiter",

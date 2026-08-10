@@ -1,12 +1,26 @@
 import type { Model, Provider } from "../types.js";
+import { pickBaseUrl } from "../tools/url.js";
+
+const ANTHROPIC_VERSION = "2023-06-01";
+
+function authHeaders(provider: Provider, protocol: "anthropic" | "openai"): Record<string, string> {
+  // Anthropic's API uses x-api-key + anthropic-version, NOT Bearer tokens. Many Anthropic-compatible
+  // gateways reject Authorization: Bearer with 401, which previously forced every Anthropic-only
+  // provider into the manual-model fallback. OpenAI-compatible endpoints use Authorization: Bearer.
+  if (protocol === "anthropic") {
+    return { "x-api-key": provider.apiKey, "anthropic-version": ANTHROPIC_VERSION };
+  }
+  return { Authorization: `Bearer ${provider.apiKey}` };
+}
 
 export async function fetchModels(provider: Provider): Promise<Model[]> {
-  const baseUrl = provider.openaiBaseUrl ?? provider.anthropicBaseUrl;
-  if (!baseUrl) {
+  const picked = pickBaseUrl(provider);
+  if (!picked) {
     throw new Error("Nenhuma URL configurada para este provedor");
   }
-  const response = await fetch(`${baseUrl}/models`, {
-    headers: { Authorization: `Bearer ${provider.apiKey}` },
+  const { url, protocol } = picked;
+  const response = await fetch(`${url}/models`, {
+    headers: authHeaders(provider, protocol),
   });
   if (!response.ok) {
     throw new Error(`Failed to fetch models: HTTP ${response.status}`);

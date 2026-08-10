@@ -63,3 +63,43 @@ describe("config store", () => {
     expect(providers[0].openaiBaseUrl).toBe("https://api.example.com/v1");
   });
 });
+
+describe("default provider + last selection", () => {
+  it("getDefaultProviderId returns null when unset and setDefaultProviderId round-trips", async () => {
+    const { readConfig, writeConfig, getDefaultProviderId, setDefaultProviderId } = await import("../../src/config/store.js");
+    const provider = { id: "p1", name: "openrouter", anthropicBaseUrl: null, openaiBaseUrl: "https://o.ai", apiKey: "sk", createdAt: "2026-01-01T00:00:00.000Z" };
+    writeConfig({ providers: [provider] });
+
+    expect(getDefaultProviderId()).toBe(null);
+    setDefaultProviderId("p1");
+    expect(getDefaultProviderId()).toBe("p1");
+    expect(readConfig().defaultProviderId).toBe("p1");
+
+    setDefaultProviderId(null);
+    expect(getDefaultProviderId()).toBe(null);
+  });
+
+  it("setDefaultProviderId throws on an unknown provider id", async () => {
+    const { writeConfig, setDefaultProviderId } = await import("../../src/config/store.js");
+    writeConfig({ providers: [] });
+    expect(() => setDefaultProviderId("nope")).toThrow(/not found/);
+  });
+
+  it("getDefaultProviderId returns null if the default id points to a deleted provider", async () => {
+    const { writeConfig, getDefaultProviderId } = await import("../../src/config/store.js");
+    writeConfig({
+      providers: [{ id: "p2", name: "other", anthropicBaseUrl: "https://a.ai", openaiBaseUrl: null, apiKey: "sk", createdAt: "2026-01-01T00:00:00.000Z" }],
+      defaultProviderId: "p1", // stale
+    });
+    expect(getDefaultProviderId()).toBe(null);
+  });
+
+  it("getLastSelection / setLastSelection round-trip the last launched combination", async () => {
+    const { writeConfig, getLastSelection, setLastSelection, readConfig } = await import("../../src/config/store.js");
+    writeConfig({ providers: [] });
+    expect(getLastSelection()).toBe(null);
+    setLastSelection({ agentId: "claude-code", providerId: "p1", model: "claude-sonnet-5" });
+    expect(getLastSelection()).toEqual({ agentId: "claude-code", providerId: "p1", model: "claude-sonnet-5" });
+    expect(readConfig().lastSelection).toEqual({ agentId: "claude-code", providerId: "p1", model: "claude-sonnet-5" });
+  });
+});

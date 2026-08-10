@@ -9,9 +9,12 @@ vi.mock("../../src/agents/detect.js", () => ({
 vi.mock("../../src/agents/launch.js", () => ({ launchAgent: vi.fn(() => Promise.resolve(0)) }));
 vi.mock("../../src/config/providers.js", () => ({ listProviders: vi.fn(() => [] as Provider[]) }));
 vi.mock("../../src/discovery/models.js", () => ({ fetchModels: vi.fn() }));
+vi.mock("../../src/config/store.js", () => ({
+  getDefaultProviderId: vi.fn(() => null),
+  getLastSelection: vi.fn(() => null),
+  setLastSelection: vi.fn(),
+}));
 vi.mock("@inquirer/prompts", () => ({ select: vi.fn(async () => "claude-code") }));
-
-const claudeDef = { id: "claude-code", label: "Claude Code", binary: "claude", versionArgs: ["--version"], authStrategy: "env-inject" as const, envProtocol: "anthropic" as const, homepage: "https://claude.ai/claude-code", buildArgs: (m: string) => ["--model", m] };
 
 const provider: Provider = { id: "1", name: "openrouter", anthropicBaseUrl: "https://anthropic.example.com", openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" };
 
@@ -46,13 +49,14 @@ describe("startToolFlow", () => {
   it("agente env-inject (claude-code) pede provedor e modelo e é lançado com eles", async () => {
     const { detectAgents } = await import("../../src/agents/detect.js");
     (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
-      { definition: claudeDef, installed: true },
+      { definition: getAgentDefinition("claude-code"), installed: true },
     ]);
     const { select } = await import("@inquirer/prompts");
     // The env-inject flow calls select three times: agent, provider, model.
+    // The provider select returns the provider *id* (startTool keys providers by id).
     (select as unknown as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce("claude-code")
-      .mockResolvedValueOnce("openrouter")
+      .mockResolvedValueOnce("1")
       .mockResolvedValueOnce("claude-sonnet-5");
     const { listProviders } = await import("../../src/config/providers.js");
     (listProviders as unknown as ReturnType<typeof vi.fn>).mockReturnValue([provider]);
@@ -71,10 +75,10 @@ describe("startToolFlow", () => {
       { definition: getAgentDefinition("codex"), installed: true },
     ]);
     const { select } = await import("@inquirer/prompts");
-    // Only TWO select calls: agent, then provider. No model prompt.
+    // Only TWO select calls: agent, then provider. No model prompt. Provider select returns its id.
     (select as unknown as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce("codex")
-      .mockResolvedValueOnce("openrouter");
+      .mockResolvedValueOnce("1");
     const { listProviders } = await import("../../src/config/providers.js");
     (listProviders as unknown as ReturnType<typeof vi.fn>).mockReturnValue([provider]);
     const { fetchModels } = await import("../../src/discovery/models.js");

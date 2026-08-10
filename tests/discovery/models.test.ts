@@ -35,7 +35,7 @@ describe("fetchModels", () => {
     expect(models).toEqual([{ id: "a-model" }, { id: "z-model" }]);
   });
 
-  it("falls back to the Anthropic URL when openaiBaseUrl is null", async () => {
+  it("falls back to the Anthropic URL with x-api-key headers when openaiBaseUrl is null", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       status: 200,
@@ -47,7 +47,7 @@ describe("fetchModels", () => {
     await fetchModels(anthropicOnly);
 
     expect(fetch).toHaveBeenCalledWith("https://anthropic.example.com/models", {
-      headers: { Authorization: "Bearer sk-x" },
+      headers: { "x-api-key": "sk-x", "anthropic-version": "2023-06-01" },
     });
   });
 

@@ -2,6 +2,7 @@ import type { DoctorCheckResult, Provider } from "../types.js";
 import { listAgentDefinitions } from "../agents/catalog.js";
 import { isAgentInstalled } from "../agents/detect.js";
 import { fetchModels } from "../discovery/models.js";
+import { pickBaseUrl } from "../tools/url.js";
 
 export function checkAgents(): DoctorCheckResult[] {
   return listAgentDefinitions().map((agent) => {
@@ -15,11 +16,11 @@ export function checkAgents(): DoctorCheckResult[] {
 }
 
 export async function checkProvider(provider: Provider): Promise<DoctorCheckResult> {
-  const baseUrl = provider.openaiBaseUrl ?? provider.anthropicBaseUrl;
-  const protocol = provider.openaiBaseUrl ? "OpenAI" : provider.anthropicBaseUrl ? "Anthropic" : null;
-  if (!protocol || !baseUrl) {
+  const picked = pickBaseUrl(provider);
+  if (!picked) {
     return { label: `Provedor: ${provider.name}`, ok: false, detail: "nenhuma URL configurada" };
   }
+  const protocol = picked.protocol === "openai" ? "OpenAI" : "Anthropic";
   try {
     const models = await fetchModels(provider);
     return { label: `Provedor: ${provider.name}`, ok: true, detail: `conectado via ${protocol}, ${models.length} modelo(s) disponível(is)` };

@@ -34,8 +34,16 @@ export interface AgentStatus {
   installed: boolean;
 }
 
+export interface LastSelection {
+  agentId: AgentId;
+  providerId: string;
+  model: string;
+}
+
 export interface AppConfig {
   providers: Provider[];
+  defaultProviderId?: string | null;
+  lastSelection?: LastSelection | null;
 }
 
 export interface DoctorCheckResult {

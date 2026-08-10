@@ -1,11 +1,7 @@
 import { addProvider, providerNameExists } from "../config/providers.js";
 import { promptSecret, promptText } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
-
-function normalizeUrl(value: string): string | null {
-  const v = value.trim();
-  return v === "" ? null : v;
-}
+import { normalizeUrl, validateUrl } from "../tools/url.js";
 
 export async function registerProviderFlow(): Promise<void> {
   console.log(theme.heading("\nCadastrar Novo Provedor"));
@@ -18,17 +14,11 @@ export async function registerProviderFlow(): Promise<void> {
 
   const anthropicRaw = await promptText(
     "URL base Anthropic (Enter para pular se o provedor não usar este protocolo):",
-    (value) => {
-      if (!value.trim()) return true;
-      try { new URL(value); return true; } catch { return "URL inválida"; }
-    }
+    validateUrl
   );
   const openaiRaw = await promptText(
     "URL base OpenAI (Enter para pular se o provedor não usar este protocolo):",
-    (value) => {
-      if (!value.trim()) return true;
-      try { new URL(value); return true; } catch { return "URL inválida"; }
-    }
+    validateUrl
   );
 
   const anthropicBaseUrl = normalizeUrl(anthropicRaw);

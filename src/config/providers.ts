@@ -1,9 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { Provider } from "../types.js";
 import { readConfig, writeConfig } from "./store.js";
+import { stripTrailingSlash } from "../tools/url.js";
 
 export function listProviders(): Provider[] {
   return readConfig().providers;
+}
+
+export function getProviderById(id: string): Provider | undefined {
+  return listProviders().find((p) => p.id === id);
 }
 
 export function providerNameExists(name: string): boolean {
@@ -25,8 +30,8 @@ export function addProvider(input: {
   const provider: Provider = {
     id: randomUUID(),
     name: input.name,
-    anthropicBaseUrl: input.anthropicBaseUrl ? input.anthropicBaseUrl.replace(/\/+$/, "") : null,
-    openaiBaseUrl: input.openaiBaseUrl ? input.openaiBaseUrl.replace(/\/+$/, "") : null,
+    anthropicBaseUrl: input.anthropicBaseUrl ? stripTrailingSlash(input.anthropicBaseUrl) : null,
+    openaiBaseUrl: input.openaiBaseUrl ? stripTrailingSlash(input.openaiBaseUrl) : null,
     apiKey: input.apiKey,
     createdAt: new Date().toISOString(),
   };
@@ -67,8 +72,8 @@ export function updateProvider(
   const updated: Provider = {
     ...current,
     name: nextName,
-    anthropicBaseUrl: nextAnthropic ? nextAnthropic.replace(/\/+$/, "") : null,
-    openaiBaseUrl: nextOpenai ? nextOpenai.replace(/\/+$/, "") : null,
+    anthropicBaseUrl: nextAnthropic ? stripTrailingSlash(nextAnthropic) : null,
+    openaiBaseUrl: nextOpenai ? stripTrailingSlash(nextOpenai) : null,
     apiKey: changes.apiKey ?? current.apiKey,
   };
   config.providers[index] = updated;

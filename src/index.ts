@@ -13,4 +13,20 @@ export async function main(): Promise<void> {
   }
 }
 
-main();
+// Only auto-run when this file is the program entry point. Guards against importing `main`
+// from tests/dev tools without triggering the interactive menu. Uses fileUrlToPath so the
+// comparison works on both POSIX and Windows and regardless of how the file was loaded.
+import { fileURLToPath } from "node:url";
+
+function isMainEntry(): boolean {
+  if (typeof process === "undefined" || !process.argv[1]) return false;
+  try {
+    return fileURLToPath(import.meta.url) === process.argv[1];
+  } catch {
+    return false;
+  }
+}
+
+if (isMainEntry()) {
+  void main();
+}

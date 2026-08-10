@@ -2,7 +2,29 @@
   "name": "ai-switch-cli",
   "version": "0.1.0",
   "description": "Universal CLI to switch between AI dev tools and providers",
+  "license": "MIT",
+  "author": "Danilo Saiter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Niliotiii/ai-switch-cli.git"
+  },
+  "homepage": "https://github.com/Niliotiii/ai-switch-cli#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "switch",
+    "provider",
+    "claude",
+    "opencode"
+  ],
   "type": "module",
+  "files": [
+    "dist",
+    "bin"
+  ],
   "bin": {
     "ai-switch": "bin/ai-switch.mjs"
   },

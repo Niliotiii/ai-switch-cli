@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# OIDC: required for npm Trusted Publishers (short-lived, signed tokens).
+# No NPM_TOKEN secret needed — npm authenticates via OpenID Connect.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false  # never cache in release builds
+
+      - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+      - run: npm publish

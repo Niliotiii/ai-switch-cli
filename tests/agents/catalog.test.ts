@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../src/agents/opencode-config.js", () => ({ syncOpencodeProvider: vi.fn() }));
+
 import { getAgentDefinition, listAgentDefinitions } from "../../src/agents/catalog.js";
 
 describe("agent catalog", () => {
@@ -39,7 +42,7 @@ describe("agent catalog", () => {
     const p = { id: "1", name: "openrouter", anthropicBaseUrl: "https://anthropic.example.com", openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" } as import("../../src/types.js").Provider;
     expect(getAgentDefinition("claude-code").buildArgs(p, "claude-sonnet-5")).toEqual(["--model", "claude-sonnet-5"]);
     expect(getAgentDefinition("codex").buildArgs(p, "gpt-4o")).toEqual([]);
-    expect(getAgentDefinition("opencode").buildArgs(p, "gpt-4o")).toEqual(["-m", "openai/gpt-4o"]); // TEMPORARY — Task 2 changes to ai-switch-openrouter/gpt-4o
+    expect(getAgentDefinition("opencode").buildArgs(p, "gpt-4o")).toEqual(["-m", "ai-switch-openrouter/gpt-4o"]);
     expect(getAgentDefinition("copilot").buildArgs(p, "gpt-4o")).toEqual([]);
     expect(getAgentDefinition("antigravity").buildArgs(p, "x")).toEqual([]);
   });
@@ -52,6 +55,25 @@ describe("agent catalog", () => {
         expect(a.requiresModel ?? true).toBe(true);
       }
     }
+  });
+
+  it("only opencode has a prepareLaunch hook; the others rely on envBuilder/envProtocol fallback", () => {
+    for (const a of listAgentDefinitions()) {
+      if (a.id === "opencode") {
+        expect(a.prepareLaunch).toBeDefined();
+      } else {
+        expect(a.prepareLaunch).toBeUndefined();
+      }
+    }
+  });
+
+  it("opencode prepareLaunch chama syncOpencodeProvider e dá throw em openaiBaseUrl null", async () => {
+    const { syncOpencodeProvider } = await import("../../src/agents/opencode-config.js");
+    const p = { id: "1", name: "openrouter", anthropicBaseUrl: null, openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" } as import("../../src/types.js").Provider;
+    getAgentDefinition("opencode").prepareLaunch!(p, "gpt-4o");
+    expect(syncOpencodeProvider).toHaveBeenCalledWith(p, "gpt-4o");
+    const noOpenai = { ...p, openaiBaseUrl: null } as import("../../src/types.js").Provider;
+    expect(() => getAgentDefinition("opencode").prepareLaunch!(noOpenai, "x")).toThrow(/URL OpenAI/);
   });
 
   it("copilot envBuilder emite COPILOT_PROVIDER_* com o modelo", () => {

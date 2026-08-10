@@ -1,5 +1,6 @@
 import type { AgentDefinition, AgentId } from "../types.js";
 import { copilotEnv } from "../tools/env.js";
+import { syncOpencodeProvider } from "./opencode-config.js";
 
 export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
   "claude-code": {
@@ -10,7 +11,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     authStrategy: "env-inject",
     envProtocol: "anthropic",
     homepage: "https://claude.ai/claude-code",
-    buildArgs: (model) => ["--model", model],
+    buildArgs: (_provider, model) => ["--model", model],
   },
   codex: {
     id: "codex",
@@ -31,7 +32,14 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     authStrategy: "env-inject",
     envProtocol: "openai",
     homepage: "https://opencode.ai",
-    buildArgs: (model) => ["-m", `openai/${model}`], // opencode -m expects provider/model; provider is the opencode-internal "openai"
+    // opencode ignores OPENAI_BASE_URL (built-in OpenAI provider is hardcoded to api.openai.com).
+    // Instead of env injection, write a custom ai-switch-<name> provider into ~/.config/opencode/opencode.json
+    // (npm: @ai-sdk/openai-compatible) and launch with -m ai-switch-<name>/<model>.
+    prepareLaunch: (provider, model) => {
+      if (!provider.openaiBaseUrl) throw new Error("Provedor não tem URL OpenAI configurada");
+      syncOpencodeProvider(provider, model);
+    },
+    buildArgs: (provider, model) => ["-m", `ai-switch-${provider.name}/${model}`],
   },
   copilot: {
     id: "copilot",

@@ -1,15 +1,15 @@
 import type { DoctorCheckResult, Provider } from "../types.js";
-import { listTools } from "../tools/registry.js";
-import { isBinaryInstalled } from "../tools/launcher.js";
+import { listAgentDefinitions } from "../agents/catalog.js";
+import { isAgentInstalled } from "../agents/detect.js";
 import { fetchModels } from "../discovery/models.js";
 
-export function checkTools(): DoctorCheckResult[] {
-  return listTools().map((tool) => {
-    const ok = isBinaryInstalled(tool);
+export function checkAgents(): DoctorCheckResult[] {
+  return listAgentDefinitions().map((agent) => {
+    const ok = isAgentInstalled(agent);
     return {
-      label: `Ferramenta: ${tool.label}`,
+      label: `Agente: ${agent.label}`,
       ok,
-      detail: ok ? `binário "${tool.binary}" encontrado` : `binário "${tool.binary}" não encontrado no PATH`,
+      detail: ok ? `binário "${agent.binary}" encontrado` : `binário "${agent.binary}" não encontrado no PATH`,
     };
   });
 }
@@ -22,22 +22,14 @@ export async function checkProvider(provider: Provider): Promise<DoctorCheckResu
   }
   try {
     const models = await fetchModels(provider);
-    return {
-      label: `Provedor: ${provider.name}`,
-      ok: true,
-      detail: `conectado via ${protocol}, ${models.length} modelo(s) disponível(is)`,
-    };
+    return { label: `Provedor: ${provider.name}`, ok: true, detail: `conectado via ${protocol}, ${models.length} modelo(s) disponível(is)` };
   } catch (error) {
-    return {
-      label: `Provedor: ${provider.name}`,
-      ok: false,
-      detail: error instanceof Error ? error.message : "erro desconhecido",
-    };
+    return { label: `Provedor: ${provider.name}`, ok: false, detail: error instanceof Error ? error.message : "erro desconhecido" };
   }
 }
 
 export async function runDoctor(providers: Provider[]): Promise<DoctorCheckResult[]> {
-  const toolChecks = checkTools();
+  const agentChecks = checkAgents();
   const providerChecks = await Promise.all(providers.map(checkProvider));
-  return [...toolChecks, ...providerChecks];
+  return [...agentChecks, ...providerChecks];
 }

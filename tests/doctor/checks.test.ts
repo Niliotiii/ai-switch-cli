@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Provider } from "../../src/types.js";
 
-vi.mock("../../src/tools/launcher.js", () => ({
-  isBinaryInstalled: vi.fn(() => true),
+vi.mock("../../src/agents/detect.js", () => ({
+  isAgentInstalled: vi.fn(() => true),
+  detectAgents: vi.fn(),
 }));
 
 vi.mock("../../src/discovery/models.js", () => ({
@@ -19,10 +20,10 @@ const provider: Provider = {
 };
 
 describe("doctor checks", () => {
-  it("checkTools returns one result per registered tool, all ok when isBinaryInstalled is true", async () => {
-    const { checkTools } = await import("../../src/doctor/checks.js");
-    const results = checkTools();
-    expect(results).toHaveLength(3);
+  it("checkAgents retorna um resultado por agente do catálogo, todos ok quando isAgentInstalled é true", async () => {
+    const { checkAgents } = await import("../../src/doctor/checks.js");
+    const results = checkAgents();
+    expect(results).toHaveLength(5);
     expect(results.every((r) => r.ok)).toBe(true);
   });
 
@@ -61,11 +62,11 @@ describe("doctor checks", () => {
     expect(result.detail).toBe("HTTP 401");
   });
 
-  it("runDoctor combines tool checks and provider checks", async () => {
+  it("runDoctor combina checagens de agente e de provedor", async () => {
     const { fetchModels } = await import("../../src/discovery/models.js");
     (fetchModels as unknown as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     const { runDoctor } = await import("../../src/doctor/checks.js");
     const results = await runDoctor([provider]);
-    expect(results).toHaveLength(4);
+    expect(results).toHaveLength(6); // 5 agentes + 1 provedor
   });
 });

@@ -2,6 +2,10 @@
 
 Cadastre provedores de IA uma vez e dispare qualquer agente de codificação instalado na máquina já apontado para o provedor certo. Detecta automaticamente **Claude Code**, **OpenAI Codex**, **opencode**, **GitHub Copilot CLI** e **Antigravity**.
 
+<p align="center">
+  <img src="./docs/demo.svg" alt="Demonstração animada do AI Switch CLI" width="720" />
+</p>
+
 ## Instalação
 
 ```bash

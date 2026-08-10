@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="470" viewBox="0 0 720 470" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace">
+  <title>AI Switch CLI — demonstração animada</title>
+  <desc>Fluxo: menu principal → selecionar agente → provedor → modelo → iniciar opencode.</desc>
+
+  <!-- Terminal window -->
+  <rect x="0" y="0" width="720" height="470" rx="12" fill="#0d1117" />
+  <rect x="0" y="0" width="720" height="34" rx="12" fill="#161b22" />
+  <rect x="0" y="22" width="720" height="12" fill="#161b22" />
+  <circle cx="20" cy="17" r="6" fill="#ff5f56" />
+  <circle cx="40" cy="17" r="6" fill="#ffbd2e" />
+  <circle cx="60" cy="17" r="6" fill="#27c93f" />
+  <text x="360" y="22" text-anchor="middle" fill="#6e7681" font-size="13">ai-switch</text>
+
+  <!-- reusable blinking cursor -->
+  <symbol id="cur" overflow="visible"><rect x="0" y="-13" width="9" height="16" fill="#22d3ee"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.5;1" dur="1s" repeatCount="indefinite" /></rect></symbol>
+
+  <!-- ============ FRAME A: main menu (0.3–3.4s) ============ -->
+  <g opacity="0">
+    <animate attributeName="opacity" keyTimes="0;0.0167;0.1667;0.1889;1" values="0;1;1;0;0" dur="18s" repeatCount="indefinite" />
+    <text x="28" y="68" fill="#22d3ee" font-size="19" font-weight="bold">AI Switch CLI</text>
+    <text x="28" y="92" fill="#6e7681" font-size="13">Centralize e alterne entre provedores e agentes de IA.</text>
+    <text x="28" y="134" fill="#22d3ee" font-size="15">❯ 1. Iniciar Agent</text>
+    <text x="28" y="158" fill="#c9d1d9" font-size="15">  2. Gerenciar Provedores</text>
+    <text x="28" y="182" fill="#c9d1d9" font-size="15">  3. Ver Modelos</text>
+    <text x="28" y="206" fill="#c9d1d9" font-size="15">  4. Ver Agents</text>
+    <text x="28" y="230" fill="#c9d1d9" font-size="15">  5. Diagnóstico</text>
+    <text x="28" y="254" fill="#c9d1d9" font-size="15">  6. Sair</text>
+    <use href="#cur" x="206" y="134" />
+  </g>
+
+  <!-- ============ FRAME B: select agent (3.0–6.4s) ============ -->
+  <g opacity="0">
+    <animate attributeName="opacity" keyTimes="0;0.1667;0.1889;0.3333;0.3556;1" values="0;0;1;1;0;0" dur="18s" repeatCount="indefinite" />
+    <text x="28" y="68" fill="#22d3ee" font-size="18" font-weight="bold">Iniciar Agent</text>
+    <text x="28" y="108" fill="#c9d1d9" font-size="14">❯ Selecione o agente: <tspan fill="#6e7681">(use as setas)</tspan></text>
+    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ Claude Code</text>
+    <text x="28" y="162" fill="#c9d1d9" font-size="15">  opencode</text>
+    <text x="28" y="186" fill="#c9d1d9" font-size="15">  GitHub Copilot CLI</text>
+    <text x="28" y="226" fill="#6e7681" font-size="12">codex e antigravity não instalados — ocultos</text>
+    <use href="#cur" x="172" y="138" />
+  </g>
+
+  <!-- ============ FRAME C: select provider (6.0–9.4s) ============ -->
+  <g opacity="0">
+    <animate attributeName="opacity" keyTimes="0;0.3333;0.3556;0.5;0.5222;1" values="0;0;1;1;0;0" dur="18s" repeatCount="indefinite" />
+    <text x="28" y="68" fill="#22d3ee" font-size="18" font-weight="bold">Iniciar Agent</text>
+    <text x="28" y="108" fill="#c9d1d9" font-size="14">❯ Selecione o provedor:</text>
+    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ Openference</text>
+    <text x="28" y="178" fill="#6e7681" font-size="12">URL OpenAI: https://api.openference.com/v1</text>
+    <use href="#cur" x="172" y="138" />
+  </g>
+
+  <!-- ============ FRAME D: select model (9.0–12.4s) ============ -->
+  <g opacity="0">
+    <animate attributeName="opacity" keyTimes="0;0.5;0.5222;0.6667;0.6889;1" values="0;0;1;1;0;0" dur="18s" repeatCount="indefinite" />
+    <text x="28" y="68" fill="#22d3ee" font-size="18" font-weight="bold">Iniciar Agent</text>
+    <text x="28" y="108" fill="#c9d1d9" font-size="14">❯ Selecione o modelo: <tspan fill="#6e7681">(listado do provedor)</tspan></text>
+    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ GLM-5.2</text>
+    <text x="28" y="162" fill="#c9d1d9" font-size="15">  GLM-5.1</text>
+    <text x="28" y="186" fill="#c9d1d9" font-size="15">  DeepSeek-V4-Pro</text>
+    <text x="28" y="210" fill="#c9d1d9" font-size="15">  Kimi K2.7 Code</text>
+    <use href="#cur" x="146" y="138" />
+  </g>
+
+  <!-- ============ FRAME E: launch opencode (12.0–18.0s, hold) ============ -->
+  <g opacity="0">
+    <animate attributeName="opacity" keyTimes="0;0.6667;0.6889;1" values="0;0;1;1" dur="18s" repeatCount="indefinite" />
+    <text x="28" y="68" fill="#3fb950" font-size="17" font-weight="bold">✓ Iniciando opencode...</text>
+    <text x="28" y="96" fill="#6e7681" font-size="13">Provedor: Openference · Modelo: GLM-5.2</text>
+    <text x="28" y="116" fill="#6e7681" font-size="12">provider ai-switch-Openference sincronizado em ~/.config/opencode/opencode.json</text>
+
+    <!-- inner opencode panel -->
+    <rect x="28" y="140" width="664" height="250" rx="8" fill="#010409" stroke="#30363d" />
+    <text x="44" y="168" fill="#6e7681" font-size="12">● opencode · ai-switch-Openference/GLM-5.2</text>
+    <text x="44" y="206" fill="#c9d1d9" font-size="15">&gt; Como posso ajudar hoje?</text>
+    <use href="#cur" x="262" y="206" />
+  </g>
+</svg>

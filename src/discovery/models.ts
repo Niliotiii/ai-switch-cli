@@ -1,7 +1,11 @@
 import type { Model, Provider } from "../types.js";
 
 export async function fetchModels(provider: Provider): Promise<Model[]> {
-  const response = await fetch(`${provider.baseUrl}/models`, {
+  const baseUrl = provider.openaiBaseUrl ?? provider.anthropicBaseUrl;
+  if (!baseUrl) {
+    throw new Error("Nenhuma URL configurada para este provedor");
+  }
+  const response = await fetch(`${baseUrl}/models`, {
     headers: { Authorization: `Bearer ${provider.apiKey}` },
   });
   if (!response.ok) {

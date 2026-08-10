@@ -15,12 +15,17 @@ export function checkTools(): DoctorCheckResult[] {
 }
 
 export async function checkProvider(provider: Provider): Promise<DoctorCheckResult> {
+  const baseUrl = provider.openaiBaseUrl ?? provider.anthropicBaseUrl;
+  const protocol = provider.openaiBaseUrl ? "OpenAI" : provider.anthropicBaseUrl ? "Anthropic" : null;
+  if (!protocol || !baseUrl) {
+    return { label: `Provedor: ${provider.name}`, ok: false, detail: "nenhuma URL configurada" };
+  }
   try {
     const models = await fetchModels(provider);
     return {
       label: `Provedor: ${provider.name}`,
       ok: true,
-      detail: `conectado, ${models.length} modelo(s) disponível(is)`,
+      detail: `conectado via ${protocol}, ${models.length} modelo(s) disponível(is)`,
     };
   } catch (error) {
     return {

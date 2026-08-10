@@ -1,10 +1,15 @@
-import { listAgents } from "../agents/registry.js";
-import { getTool } from "../tools/registry.js";
+import { detectAgents } from "../agents/detect.js";
 import { renderTable } from "../ui/table.js";
 import { theme } from "../ui/theme.js";
 
 export function listAgentsFlow(): void {
   console.log(theme.heading("\nVer Agents Disponíveis"));
-  const rows = listAgents().map((agent) => [agent.name, getTool(agent.toolId).label, agent.description]);
-  console.log(renderTable(["Agent", "Ferramenta", "Descrição"], rows));
+  const statuses = detectAgents();
+  const rows = statuses.map((s) => [
+    s.definition.label,
+    s.definition.binary,
+    s.installed ? theme.ok("instalado") : theme.fail("não instalado"),
+    s.installed ? "" : s.definition.homepage,
+  ]);
+  console.log(renderTable(["Agente", "Binário", "Status", "Instalação"], rows));
 }

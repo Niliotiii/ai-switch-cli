@@ -45,8 +45,8 @@
     <animate attributeName="opacity" keyTimes="0;0.3333;0.3556;0.5;0.5222;1" values="0;0;1;1;0;0" dur="18s" repeatCount="indefinite" />
     <text x="28" y="68" fill="#22d3ee" font-size="18" font-weight="bold">Iniciar Agent</text>
     <text x="28" y="108" fill="#c9d1d9" font-size="14">❯ Selecione o provedor:</text>
-    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ Openference</text>
-    <text x="28" y="178" fill="#6e7681" font-size="12">URL OpenAI: https://api.openference.com/v1</text>
+    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ Acme AI</text>
+    <text x="28" y="178" fill="#6e7681" font-size="12">URL OpenAI: https://api.acme-ai.example/v1</text>
     <use href="#cur" x="172" y="138" />
   </g>
 
@@ -55,10 +55,10 @@
     <animate attributeName="opacity" keyTimes="0;0.5;0.5222;0.6667;0.6889;1" values="0;0;1;1;0;0" dur="18s" repeatCount="indefinite" />
     <text x="28" y="68" fill="#22d3ee" font-size="18" font-weight="bold">Iniciar Agent</text>
     <text x="28" y="108" fill="#c9d1d9" font-size="14">❯ Selecione o modelo: <tspan fill="#6e7681">(listado do provedor)</tspan></text>
-    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ GLM-5.2</text>
-    <text x="28" y="162" fill="#c9d1d9" font-size="15">  GLM-5.1</text>
-    <text x="28" y="186" fill="#c9d1d9" font-size="15">  DeepSeek-V4-Pro</text>
-    <text x="28" y="210" fill="#c9d1d9" font-size="15">  Kimi K2.7 Code</text>
+    <text x="28" y="138" fill="#22d3ee" font-size="15">❯ acme-pro</text>
+    <text x="28" y="162" fill="#c9d1d9" font-size="15">  acme-lite</text>
+    <text x="28" y="186" fill="#c9d1d9" font-size="15">  acme-reason</text>
+    <text x="28" y="210" fill="#c9d1d9" font-size="15">  acme-vision</text>
     <use href="#cur" x="146" y="138" />
   </g>
 
@@ -66,12 +66,12 @@
   <g opacity="0">
     <animate attributeName="opacity" keyTimes="0;0.6667;0.6889;1" values="0;0;1;1" dur="18s" repeatCount="indefinite" />
     <text x="28" y="68" fill="#3fb950" font-size="17" font-weight="bold">✓ Iniciando opencode...</text>
-    <text x="28" y="96" fill="#6e7681" font-size="13">Provedor: Openference · Modelo: GLM-5.2</text>
-    <text x="28" y="116" fill="#6e7681" font-size="12">provider ai-switch-Openference sincronizado em ~/.config/opencode/opencode.json</text>
+    <text x="28" y="96" fill="#6e7681" font-size="13">Provedor: Acme AI · Modelo: acme-pro</text>
+    <text x="28" y="116" fill="#6e7681" font-size="12">provider ai-switch-Acme AI sincronizado em ~/.config/opencode/opencode.json</text>
 
     <!-- inner opencode panel -->
     <rect x="28" y="140" width="664" height="250" rx="8" fill="#010409" stroke="#30363d" />
-    <text x="44" y="168" fill="#6e7681" font-size="12">● opencode · ai-switch-Openference/GLM-5.2</text>
+    <text x="44" y="168" fill="#6e7681" font-size="12">● opencode · ai-switch-Acme AI/acme-pro</text>
     <text x="44" y="206" fill="#c9d1d9" font-size="15">&gt; Como posso ajudar hoje?</text>
     <use href="#cur" x="262" y="206" />
   </g>

@@ -2,7 +2,7 @@ import { listAgentsByTool } from "../agents/registry.js";
 import { listProviders } from "../config/providers.js";
 import { fetchModels } from "../discovery/models.js";
 import { isBinaryInstalled, launchTool } from "../tools/launcher.js";
-import { getTool, listTools } from "../tools/registry.js";
+import { getProtocolBaseUrl, getTool, listTools } from "../tools/registry.js";
 import { promptChoice, promptText } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
 
@@ -31,6 +31,17 @@ export async function startToolFlow(): Promise<void> {
     providers.map((p) => ({ name: p.name, value: p.name }))
   );
   const provider = providers.find((p) => p.name === providerName)!;
+
+  const baseUrl = getProtocolBaseUrl(tool, provider);
+  if (!baseUrl) {
+    const protocol = tool.id === "claude-code" ? "Anthropic" : "OpenAI";
+    console.log(
+      theme.fail(
+        `Provedor "${provider.name}" não tem URL ${protocol} configurada. Edite o provedor para adicioná-la.`
+      )
+    );
+    return;
+  }
 
   let model: string;
   try {

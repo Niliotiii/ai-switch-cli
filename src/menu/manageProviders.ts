@@ -12,8 +12,13 @@ async function listProvidersFlow(): Promise<void> {
     console.log(theme.fail("Nenhum provedor cadastrado."));
     return;
   }
-  const rows = providers.map((p) => [p.name, p.baseUrl, p.createdAt]);
-  console.log(renderTable(["Nome", "URL Base", "Criado em"], rows));
+  const rows = providers.map((p) => [
+    p.name,
+    p.anthropicBaseUrl ?? "—",
+    p.openaiBaseUrl ?? "—",
+    p.createdAt,
+  ]);
+  console.log(renderTable(["Nome", "URL Anthropic", "URL OpenAI", "Criado em"], rows));
 }
 
 async function editProviderFlow(): Promise<void> {
@@ -42,19 +47,31 @@ async function editProviderFlow(): Promise<void> {
     },
     current.name
   );
-  const newBaseUrl = await promptText(
-    `URL base [${current.baseUrl}]:`,
+  const newAnthropicRaw = await promptText(
+    `URL Anthropic [${current.anthropicBaseUrl ?? "—"}]:`,
     (value) => {
-      const v = value.trim() || current.baseUrl;
-      if (v === "") return true;
+      if (!value.trim()) return true;
       try {
-        new URL(v);
+        new URL(value);
         return true;
       } catch {
         return "URL inválida";
       }
     },
-    current.baseUrl
+    current.anthropicBaseUrl ?? undefined
+  );
+  const newOpenaiRaw = await promptText(
+    `URL OpenAI [${current.openaiBaseUrl ?? "—"}]:`,
+    (value) => {
+      if (!value.trim()) return true;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return "URL inválida";
+      }
+    },
+    current.openaiBaseUrl ?? undefined
   );
   const newApiKeyRaw = await promptSecret(
     "Nova API Key (pressione Enter para manter a atual):"
@@ -63,7 +80,8 @@ async function editProviderFlow(): Promise<void> {
   try {
     const updated = updateProvider(current.id, {
       name: newName.trim() || current.name,
-      baseUrl: newBaseUrl.trim() || current.baseUrl,
+      anthropicBaseUrl: newAnthropicRaw.trim() === "" ? current.anthropicBaseUrl : newAnthropicRaw.trim(),
+      openaiBaseUrl: newOpenaiRaw.trim() === "" ? current.openaiBaseUrl : newOpenaiRaw.trim(),
       apiKey: newApiKeyRaw.trim() === "" ? undefined : newApiKeyRaw,
     });
     console.log(theme.ok(`\nProvedor "${updated.name}" atualizado com sucesso.`));

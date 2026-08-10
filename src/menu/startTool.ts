@@ -2,8 +2,10 @@ import { listProviders } from "../config/providers.js";
 import { getAgentDefinition } from "../agents/catalog.js";
 import { detectAgents } from "../agents/detect.js";
 import { launchAgent } from "../agents/launch.js";
-import { promptChoice } from "../ui/prompts.js";
+import { fetchModels } from "../discovery/models.js";
+import { promptChoice, promptText } from "../ui/prompts.js";
 import { theme } from "../ui/theme.js";
+import type { Provider } from "../types.js";
 
 export async function startToolFlow(): Promise<void> {
   console.log(theme.heading("\nIniciar Agent"));
@@ -21,6 +23,7 @@ export async function startToolFlow(): Promise<void> {
   const agent = getAgentDefinition(agentId);
 
   let provider = null;
+  let model = "";
   if (agent.authStrategy === "env-inject") {
     const providers = listProviders();
     if (providers.length === 0) {
@@ -39,11 +42,26 @@ export async function startToolFlow(): Promise<void> {
       return;
     }
     provider = selected;
+    model = await selectModel(selected);
   }
 
   console.log(theme.ok(`\nIniciando ${agent.label}...\n`));
-  const exitCode = await launchAgent(agent, provider);
+  const exitCode = await launchAgent(agent, provider, model);
   if (exitCode !== 0) {
     console.log(theme.fail(`${agent.label} encerrou com código ${exitCode}.`));
+  }
+}
+
+async function selectModel(provider: Provider): Promise<string> {
+  try {
+    const models = await fetchModels(provider);
+    if (models.length === 0) throw new Error("nenhum modelo retornado");
+    return await promptChoice(
+      "Selecione o modelo:",
+      models.map((m) => ({ name: m.id, value: m.id }))
+    );
+  } catch (error) {
+    console.log(theme.fail(`Não foi possível listar modelos automaticamente (${error instanceof Error ? error.message : error}).`));
+    return await promptText("Digite o nome do modelo manualmente:");
   }
 }

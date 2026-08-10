@@ -57,15 +57,14 @@ async function editProviderFlow(): Promise<void> {
     current.baseUrl
   );
   const newApiKeyRaw = await promptSecret(
-    "API Key (pressione Enter para manter a atual):",
-    current.apiKey
+    "Nova API Key (pressione Enter para manter a atual):"
   );
 
   try {
     const updated = updateProvider(current.id, {
       name: newName.trim() || current.name,
       baseUrl: newBaseUrl.trim() || current.baseUrl,
-      apiKey: newApiKeyRaw === current.apiKey ? undefined : newApiKeyRaw,
+      apiKey: newApiKeyRaw.trim() === "" ? undefined : newApiKeyRaw,
     });
     console.log(theme.ok(`\nProvedor "${updated.name}" atualizado com sucesso.`));
   } catch (error) {

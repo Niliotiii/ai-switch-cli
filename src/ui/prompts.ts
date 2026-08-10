@@ -11,11 +11,11 @@ export async function promptText(
   return input(opts);
 }
 
-export async function promptSecret(
-  message: string,
-  defaultValue?: string
-): Promise<string> {
-  return password({ message, mask: "*", ...(defaultValue !== undefined ? { default: defaultValue } : {}) });
+export async function promptSecret(message: string): Promise<string> {
+  // NOTE: @inquirer/password does NOT support a `default` value — pressing Enter
+  // with no input returns an empty string. Callers that want "Enter to keep
+  // current" must treat empty input as "keep" themselves (see editProviderFlow).
+  return password({ message, mask: "*" });
 }
 
 export async function promptChoice<T extends string>(

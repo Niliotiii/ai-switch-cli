@@ -107,4 +107,16 @@ describe("agent launch", () => {
       process.env = realEnv;
     }
   });
+
+  it("copilotEnv throws on null openaiBaseUrl (guard) and emits the COPILOT_PROVIDER_* map", async () => {
+    const { copilotEnv } = await import("../../src/tools/env.js");
+    const ok = { ...provider } as Provider;
+    expect(copilotEnv(ok, "gpt-4o")).toEqual({
+      COPILOT_PROVIDER_BASE_URL: "https://openrouter.ai/api/v1",
+      COPILOT_PROVIDER_TYPE: "openai",
+      COPILOT_PROVIDER_API_KEY: "sk-x",
+      COPILOT_MODEL: "gpt-4o",
+    });
+    expect(() => copilotEnv({ ...provider, openaiBaseUrl: null } as Provider, "m")).toThrow(/URL OpenAI/);
+  });
 });

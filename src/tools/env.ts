@@ -17,3 +17,15 @@ export function openaiEnv(provider: Provider): Record<string, string> {
     OPENAI_BASE_URL: provider.openaiBaseUrl,
   };
 }
+
+export function copilotEnv(provider: Provider, model: string): Record<string, string> {
+  if (!provider.openaiBaseUrl) {
+    throw new Error("Provedor não tem URL OpenAI configurada");
+  }
+  return {
+    COPILOT_PROVIDER_BASE_URL: provider.openaiBaseUrl,
+    COPILOT_PROVIDER_TYPE: "openai",
+    COPILOT_PROVIDER_API_KEY: provider.apiKey,
+    COPILOT_MODEL: model,
+  };
+}

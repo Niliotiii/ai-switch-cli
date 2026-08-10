@@ -11,23 +11,20 @@ export interface Model {
   id: string;
 }
 
-export type ToolId = "claude-code" | "aider" | "open-interpreter";
-
-export interface ToolDefinition {
-  id: ToolId;
+export type AgentId = "claude-code" | "codex" | "opencode" | "copilot" | "antigravity";
+export type AuthStrategy = "env-inject" | "self-contained";
+export interface AgentDefinition {
+  id: AgentId;
   label: string;
   binary: string;
   versionArgs: string[];
-  buildEnv: (provider: Provider, model: string) => Record<string, string>;
-  buildArgs: (model: string, extraArgs: string[]) => string[];
+  authStrategy: AuthStrategy;
+  envProtocol: "anthropic" | "openai" | null; // null se, e somente se, authStrategy === "self-contained"
+  homepage: string;
 }
-
-export interface AgentProfile {
-  id: string;
-  name: string;
-  toolId: ToolId;
-  description: string;
-  extraArgs: string[];
+export interface AgentStatus {
+  definition: AgentDefinition;
+  installed: boolean;
 }
 
 export interface AppConfig {

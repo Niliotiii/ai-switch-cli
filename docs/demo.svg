@@ -36,7 +36,7 @@
     <text x="28" y="138" fill="#22d3ee" font-size="15">❯ Claude Code</text>
     <text x="28" y="162" fill="#c9d1d9" font-size="15">  opencode</text>
     <text x="28" y="186" fill="#c9d1d9" font-size="15">  GitHub Copilot CLI</text>
-    <text x="28" y="226" fill="#6e7681" font-size="12">codex e antigravity não instalados — ocultos</text>
+    <text x="28" y="226" fill="#6e7681" font-size="12">codex não instalado — oculto</text>
     <use href="#cur" x="172" y="138" />
   </g>
 

@@ -11,7 +11,7 @@ export interface Model {
   id: string;
 }
 
-export type AgentId = "claude-code" | "codex" | "opencode" | "copilot" | "antigravity";
+export type AgentId = "claude-code" | "codex" | "opencode" | "copilot";
 export type AuthStrategy = "env-inject" | "self-contained";
 export type EnvBuilder = (provider: Provider, model: string) => Record<string, string>;
 export type ArgsBuilder = (provider: Provider | null, model: string) => string[];

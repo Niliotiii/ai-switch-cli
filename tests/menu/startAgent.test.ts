@@ -12,7 +12,6 @@ vi.mock("../../src/discovery/models.js", () => ({ fetchModels: vi.fn() }));
 vi.mock("@inquirer/prompts", () => ({ select: vi.fn(async () => "claude-code") }));
 
 const claudeDef = { id: "claude-code", label: "Claude Code", binary: "claude", versionArgs: ["--version"], authStrategy: "env-inject" as const, envProtocol: "anthropic" as const, homepage: "https://claude.ai/claude-code", buildArgs: (m: string) => ["--model", m] };
-const antigravityDef = { id: "antigravity", label: "Antigravity", binary: "antigravity", versionArgs: ["--version"], authStrategy: "self-contained" as const, envProtocol: null, homepage: "https://antigravity.google", buildArgs: () => [] };
 
 const provider: Provider = { id: "1", name: "openrouter", anthropicBaseUrl: "https://anthropic.example.com", openaiBaseUrl: "https://openrouter.ai/api/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" };
 
@@ -23,7 +22,7 @@ describe("startToolFlow", () => {
     const { BACK } = await import("../../src/ui/prompts.js");
     const { detectAgents } = await import("../../src/agents/detect.js");
     (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
-      { definition: getAgentDefinition("antigravity"), installed: true },
+      { definition: getAgentDefinition("opencode"), installed: true },
     ]);
     const { select } = await import("@inquirer/prompts");
     (select as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(BACK);
@@ -42,24 +41,6 @@ describe("startToolFlow", () => {
     const { startToolFlow } = await import("../../src/menu/startTool.js");
     await startToolFlow();
     expect(logs.join("\n")).toMatch(/Nenhum agente detectado/);
-  });
-
-  it("agente self-contained (antigravity) é lançado com provider null e model vazio, sem prompt de provedor/modelo", async () => {
-    const { detectAgents } = await import("../../src/agents/detect.js");
-    (detectAgents as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
-      { definition: antigravityDef, installed: true },
-    ]);
-    const { select } = await import("@inquirer/prompts");
-    (select as unknown as ReturnType<typeof vi.fn>).mockResolvedValue("antigravity");
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    const { launchAgent } = await import("../../src/agents/launch.js");
-    const { listProviders } = await import("../../src/config/providers.js");
-    const { fetchModels } = await import("../../src/discovery/models.js");
-    const { startToolFlow } = await import("../../src/menu/startTool.js");
-    await startToolFlow();
-    expect(listProviders).not.toHaveBeenCalled();
-    expect(fetchModels).not.toHaveBeenCalled();
-    expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("antigravity"), null, "");
   });
 
   it("agente env-inject (claude-code) pede provedor e modelo e é lançado com eles", async () => {

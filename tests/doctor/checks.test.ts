@@ -23,7 +23,7 @@ describe("doctor checks", () => {
   it("checkAgents retorna um resultado por agente do catálogo, todos ok quando isAgentInstalled é true", async () => {
     const { checkAgents } = await import("../../src/doctor/checks.js");
     const results = checkAgents();
-    expect(results).toHaveLength(5);
+    expect(results).toHaveLength(4);
     expect(results.every((r) => r.ok)).toBe(true);
   });
 
@@ -67,6 +67,6 @@ describe("doctor checks", () => {
     (fetchModels as unknown as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     const { runDoctor } = await import("../../src/doctor/checks.js");
     const results = await runDoctor([provider]);
-    expect(results).toHaveLength(6); // 5 agentes + 1 provedor
+    expect(results).toHaveLength(5); // 4 agentes + 1 provedor
   });
 });

@@ -8,9 +8,9 @@ vi.mock("../../src/agents/opencode-config.js", () => ({
 import { getAgentDefinition, listAgentDefinitions } from "../../src/agents/catalog.js";
 
 describe("agent catalog", () => {
-  it("listAgentDefinitions retorna exatamente os 5 agentes detectados", () => {
+  it("listAgentDefinitions retorna exatamente os 4 agentes detectados", () => {
     const ids = listAgentDefinitions().map((a) => a.id).sort();
-    expect(ids).toEqual(["antigravity", "claude-code", "codex", "copilot", "opencode"]);
+    expect(ids).toEqual(["claude-code", "codex", "copilot", "opencode"]);
   });
 
   it("todo agente tem binary, versionArgs [--version] e authStrategy/envProtocol consistentes", () => {
@@ -18,22 +18,17 @@ describe("agent catalog", () => {
       expect(a.binary).toBeTruthy();
       expect(a.versionArgs).toEqual(["--version"]);
       expect(a.homepage).toBeTruthy();
-      if (a.authStrategy === "self-contained") {
-        expect(a.envProtocol).toBeNull();
-        expect(a.id).toBe("antigravity"); // the only self-contained agent
-      } else {
-        expect(a.envProtocol === "anthropic" || a.envProtocol === "openai").toBe(true);
-      }
+      expect(a.authStrategy).toBe("env-inject");
+      expect(a.envProtocol === "anthropic" || a.envProtocol === "openai").toBe(true);
     }
   });
 
-  it("claude-code/codex/opencode/copilot são env-inject; antigravity é self-contained", () => {
+  it("todos os agentes são env-inject", () => {
     const auth = (id: string) => getAgentDefinition(id as never).authStrategy;
     expect(auth("claude-code")).toBe("env-inject");
     expect(auth("codex")).toBe("env-inject");
     expect(auth("opencode")).toBe("env-inject");
     expect(auth("copilot")).toBe("env-inject");
-    expect(auth("antigravity")).toBe("self-contained");
   });
 
   it("claude-code envProtocol é anthropic; codex envProtocol é openai", () => {
@@ -47,7 +42,6 @@ describe("agent catalog", () => {
     expect(getAgentDefinition("codex").buildArgs(p, "gpt-4o")).toEqual([]);
     expect(getAgentDefinition("opencode").buildArgs(p, "gpt-4o")).toEqual(["-m", "ai-switch-openrouter/gpt-4o"]);
     expect(getAgentDefinition("copilot").buildArgs(p, "gpt-4o")).toEqual([]);
-    expect(getAgentDefinition("antigravity").buildArgs(p, "x")).toEqual([]);
   });
 
   it("opencode buildArgs normalizes the provider name (spaces/caps safe)", () => {

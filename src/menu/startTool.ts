@@ -12,7 +12,7 @@ export async function startToolFlow(): Promise<void> {
 
   const installed = detectAgents().filter((s) => s.installed);
   if (installed.length === 0) {
-    console.log(theme.fail("Nenhum agente detectado. Instale claude, codex, opencode, copilot ou antigravity."));
+    console.log(theme.fail("Nenhum agente detectado. Instale claude, codex, opencode ou copilot."));
     return;
   }
 

@@ -1,6 +1,6 @@
 # AI Switch CLI
 
-Cadastre provedores de IA uma vez e dispare qualquer agente de codificação instalado na máquina já apontado para o provedor certo. Detecta automaticamente **Claude Code**, **OpenAI Codex**, **opencode**, **GitHub Copilot CLI** e **Antigravity**.
+Cadastre provedores de IA uma vez e dispare qualquer agente de codificação instalado na máquina já apontado para o provedor certo. Detecta automaticamente **Claude Code**, **OpenAI Codex**, **opencode** e **GitHub Copilot CLI**.
 
 <p align="center">
   <img src="./docs/demo.svg" alt="Demonstração animada do AI Switch CLI" width="720" />
@@ -36,11 +36,9 @@ O menu é numérico e interativo (`@inquirer/prompts`).
 | OpenAI Codex | `codex` | env vars `OPENAI_*` (modelo do `~/.codex/config.toml`) | https://github.com/openai/codex |
 | opencode | `opencode` | provedor custom em `opencode.json` + `-m ai-switch-<p>/<m>` | https://opencode.ai |
 | GitHub Copilot CLI | `copilot` | env vars `COPILOT_PROVIDER_*` + `COPILOT_MODEL` | https://github.com/github/copilot-cli |
-| Antigravity | `antigravity` | self-contained (auth própria) | https://antigravity.google |
 
 - **Claude Code / Codex / Copilot** recebem env vars do provedor selecionado.
 - **opencode** ignora `OPENAI_BASE_URL`, então o CLI escreve um provedor `ai-switch-<nome>` em `~/.config/opencode/opencode.json` (`@ai-sdk/openai-compatible`) e o lança com `-m ai-switch-<nome>/<modelo>`. A escrita é idempotente — sobrescreve só a chave `ai-switch-*` e preserva o resto do arquivo.
-- **Antigravity** gerencia a própria autenticação; é lançado direto, sem provedor.
 
 O modelo é escolhido a partir da lista do provedor (`GET <url>/models`), com fallback para entrada manual. Exceto Codex, que lê o modelo do próprio `~/.codex/config.toml`.
 

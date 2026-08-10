@@ -55,16 +55,6 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     envBuilder: (provider, model) => copilotEnv(provider, model),
     buildArgs: () => [],
   },
-  antigravity: {
-    id: "antigravity",
-    label: "Antigravity",
-    binary: "antigravity",
-    versionArgs: ["--version"],
-    authStrategy: "self-contained",
-    envProtocol: null,
-    homepage: "https://antigravity.google",
-    buildArgs: () => [],
-  },
 };
 
 export function listAgentDefinitions(): AgentDefinition[] {

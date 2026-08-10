@@ -21,7 +21,7 @@ describe("agent detection", () => {
     const spawn = vi.fn((bin: string) => ({ status: bin === "opencode" ? 0 : 1 }));
     const { detectAgents } = await import("../../src/agents/detect.js");
     const statuses = detectAgents(listAgentDefinitions(), spawn as never);
-    expect(statuses).toHaveLength(5);
+    expect(statuses).toHaveLength(4);
     const installed = statuses.filter((s) => s.installed).map((s) => s.definition.id);
     expect(installed).toEqual(["opencode"]);
   });
@@ -29,6 +29,6 @@ describe("agent detection", () => {
   it("detectAgents usa todo o catálogo por default quando nenhum agente é passado", async () => {
     const spawn = vi.fn(() => ({ status: 1 }));
     const { detectAgents } = await import("../../src/agents/detect.js");
-    expect(detectAgents(undefined, spawn as never)).toHaveLength(5);
+    expect(detectAgents(undefined, spawn as never)).toHaveLength(4);
   });
 });

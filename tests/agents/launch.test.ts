@@ -36,13 +36,6 @@ describe("agent launch", () => {
     });
   });
 
-  it("buildAgentEnv: agentes self-contained (antigravity) retornam {} mesmo com provedor", async () => {
-    const { buildAgentEnv } = await import("../../src/agents/launch.js");
-    for (const id of ["antigravity"]) {
-      expect(buildAgentEnv(def(id), provider, "x")).toEqual({});
-    }
-  });
-
   it("buildAgentEnv: opencode (prepareLaunch-based) retorna {} — config file é o mecanismo, não env", async () => {
     const { buildAgentEnv } = await import("../../src/agents/launch.js");
     expect(buildAgentEnv(def("opencode"), provider, "gpt-4o")).toEqual({});

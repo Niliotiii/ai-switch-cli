@@ -1,7 +1,8 @@
 export interface Provider {
   id: string;
   name: string;
-  baseUrl: string;
+  anthropicBaseUrl: string | null;
+  openaiBaseUrl: string | null;
   apiKey: string;
   createdAt: string;
 }

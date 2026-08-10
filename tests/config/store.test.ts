@@ -46,4 +46,20 @@ describe("config store", () => {
     expect(() => readConfig()).not.toThrow();
     expect(readConfig()).toEqual({ providers: [] });
   });
+
+  it("readConfig migrates a legacy provider with baseUrl into both protocol URLs", async () => {
+    const { writeConfig, readConfig } = await import("../../src/config/store.js");
+    const { getConfigFile } = await import("../../src/config/paths.js");
+    const fs = await import("node:fs");
+    const legacy = {
+      providers: [
+        { id: "1", name: "old", baseUrl: "https://api.example.com/v1", apiKey: "sk-x", createdAt: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+    fs.writeFileSync(getConfigFile(), JSON.stringify(legacy), { mode: 0o600 });
+
+    const providers = readConfig().providers;
+    expect(providers[0].anthropicBaseUrl).toBe("https://api.example.com/v1");
+    expect(providers[0].openaiBaseUrl).toBe("https://api.example.com/v1");
+  });
 });

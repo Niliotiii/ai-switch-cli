@@ -1,18 +1,37 @@
 import fs from "node:fs";
-import type { AppConfig } from "../types.js";
+import type { AppConfig, Provider } from "../types.js";
 import { getConfigDir, getConfigFile } from "./paths.js";
+
+type LegacyProvider = Partial<Provider> & { baseUrl?: string };
+
+function migrateProvider(p: LegacyProvider): Provider {
+  if (p.anthropicBaseUrl !== undefined && p.openaiBaseUrl !== undefined) {
+    return p as Provider;
+  }
+  const baseUrl = p.baseUrl ?? null;
+  return {
+    id: p.id!,
+    name: p.name!,
+    anthropicBaseUrl: p.anthropicBaseUrl ?? baseUrl,
+    openaiBaseUrl: p.openaiBaseUrl ?? baseUrl,
+    apiKey: p.apiKey!,
+    createdAt: p.createdAt!,
+  };
+}
 
 export function readConfig(): AppConfig {
   const file = getConfigFile();
   if (!fs.existsSync(file)) {
     return { providers: [] };
   }
-  const raw = fs.readFileSync(file, "utf-8");
+  let parsed: unknown;
   try {
-    return JSON.parse(raw) as AppConfig;
+    parsed = JSON.parse(fs.readFileSync(file, "utf-8"));
   } catch {
     return { providers: [] };
   }
+  const config = parsed as AppConfig;
+  return { providers: (config.providers ?? []).map(migrateProvider) };
 }
 
 export function writeConfig(config: AppConfig): void {

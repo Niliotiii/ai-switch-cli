@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Fake `claude` binary used ONLY for recording docs/demo.gif (see docs/demo.tape).
+# Placed first on $PATH during recording so detectAgents() finds it and launchAgent()
+# spawns it instead of the real Claude Code CLI — no real API calls, no real auth.
+
+if [[ "$1" == "--version" ]]; then
+  echo "claude-code-demo 1.0.0 (simulated for recording)"
+  exit 0
+fi
+
+# Simulate the real `claude --model <name>` startup banner, then exit on its own so the
+# recording doesn't need to send Ctrl+C to kill a real interactive session.
+model="${2:-desconhecido}"
+printf '\033[36m\033[1m✻ Claude Code\033[0m \033[2mv1.x (demo)\033[0m\n\n'
+sleep 0.4
+printf '  \033[2mModelo:\033[0m %s\n' "$model"
+sleep 0.3
+printf '  \033[2mDiretório:\033[0m %s\n' "$(pwd)"
+sleep 0.5
+printf '\n\033[32m✔\033[0m Sessão pronta. Digite sua tarefa para começar.\n\n'
+sleep 1.2
+printf '\033[2m(demo encerrada automaticamente)\033[0m\n'
+exit 0

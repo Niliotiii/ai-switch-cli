@@ -12,6 +12,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     envProtocol: "anthropic",
     homepage: "https://claude.ai/claude-code",
     buildArgs: (_provider, model) => ["--model", model],
+    skipPermissionsArgs: ["--dangerously-skip-permissions"],
   },
   codex: {
     id: "codex",
@@ -23,6 +24,9 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     homepage: "https://github.com/openai/codex",
     buildArgs: () => [], // model comes from ~/.codex/config.toml
     requiresModel: false, // codex reads its model from ~/.codex/config.toml; the menu must not prompt for one
+    // --full-auto is the openai/codex "yolo" mode (allow-all-tools + allow-all-paths + allow-all-urls,
+    // sandboxed network access). Aliased as --yolo by codex itself.
+    skipPermissionsArgs: ["--full-auto"],
   },
   opencode: {
     id: "opencode",
@@ -43,6 +47,8 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
       if (!provider) throw new Error("opencode requer um provedor (buildArgs)");
       return ["-m", `${opencodeProviderKey(provider)}/${model}`];
     },
+    // --auto is opencode's skip-permissions flag (the alternative is "*": "allow" in opencode.json).
+    skipPermissionsArgs: ["--auto"],
   },
   copilot: {
     id: "copilot",
@@ -54,6 +60,9 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     homepage: "https://github.com/github/copilot-cli",
     envBuilder: (provider, model) => copilotEnv(provider, model),
     buildArgs: () => [],
+    // --yolo is the short alias of --allow-all (allow-all-tools + allow-all-paths + allow-all-urls).
+    // In an interactive session the same can be toggled with Shift+Tab or the /yolo slash command.
+    skipPermissionsArgs: ["--yolo"],
   },
 };
 

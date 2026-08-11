@@ -116,3 +116,40 @@ describe("agent definition fields", () => {
     }
   });
 });
+
+describe("skipPermissionsArgs (modo sem aprovação)", () => {
+  it("claude-code usa --dangerously-skip-permissions", () => {
+    expect(getAgentDefinition("claude-code").skipPermissionsArgs).toEqual(["--dangerously-skip-permissions"]);
+  });
+
+  it("codex usa --full-auto", () => {
+    expect(getAgentDefinition("codex").skipPermissionsArgs).toEqual(["--full-auto"]);
+  });
+
+  it("opencode usa --auto", () => {
+    expect(getAgentDefinition("opencode").skipPermissionsArgs).toEqual(["--auto"]);
+  });
+
+  it("copilot usa --yolo (alias de --allow-all, combina allow-all-tools + paths + urls)", () => {
+    expect(getAgentDefinition("copilot").skipPermissionsArgs).toEqual(["--yolo"]);
+  });
+
+  it("todos os 4 agentes suportam skipPermissionsArgs", () => {
+    for (const a of listAgentDefinitions()) {
+      expect(a.skipPermissionsArgs, `${a.id} should support skip`).toBeDefined();
+    }
+  });
+
+  it("todo agente com skipPermissionsArgs tem um array não-vazio de strings", () => {
+    for (const a of listAgentDefinitions()) {
+      if (a.skipPermissionsArgs) {
+        expect(Array.isArray(a.skipPermissionsArgs)).toBe(true);
+        expect(a.skipPermissionsArgs.length).toBeGreaterThan(0);
+        for (const flag of a.skipPermissionsArgs) {
+          expect(typeof flag).toBe("string");
+          expect(flag.startsWith("--")).toBe(true);
+        }
+      }
+    }
+  });
+});

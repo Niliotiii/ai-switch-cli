@@ -28,6 +28,14 @@ export interface AgentDefinition {
   buildArgs: ArgsBuilder; // CLI args; takes (provider, model) — most agents ignore provider; opencode uses it for the provider-name prefix
   requiresModel?: boolean; // false when the agent ignores a passed model (e.g. codex reads ~/.codex/config.toml); default true for env-inject agents
   prepareLaunch?: PrepareLaunch; // side-effect hook run before spawn (e.g. write opencode.json); env-inject agents that need a config file instead of env vars
+  /**
+   * When present, the agent supports a "no-approval" / skip-permissions mode and these CLI flags
+   * enable it. The start menu only offers the toggle when this is defined; launchAgent concatenates
+   * the flags after buildArgs when skipPermissions is true. Omit the field for agents without a
+   * stable public flag — the CLI will then refuse to launch with skipPermissions=true rather than
+   * guess one and pass an unrecognized flag.
+   */
+  skipPermissionsArgs?: string[];
 }
 export interface AgentStatus {
   definition: AgentDefinition;
@@ -42,7 +50,6 @@ export interface LastSelection {
 
 export interface AppConfig {
   providers: Provider[];
-  defaultProviderId?: string | null;
   lastSelection?: LastSelection | null;
 }
 

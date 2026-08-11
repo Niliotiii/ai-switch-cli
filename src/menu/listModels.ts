@@ -1,5 +1,6 @@
 import { listProviders } from '../config/providers.js';
 import { fetchModels } from '../discovery/models.js';
+import { setCachedModels } from '../discovery/cache.js';
 import { promptChoiceWithBack } from '../ui/prompts.js';
 import { renderTable } from '../ui/table.js';
 import { theme } from '../ui/theme.js';
@@ -25,7 +26,10 @@ export async function listModelsFlow(): Promise<void> {
   const provider = providers.find((p) => p.name === providerName)!;
 
   try {
+    // "Ver Modelos" is the explicit refresh: always hit the network, then warm the on-disk cache
+    // so the next "Iniciar Agent" can read from it (cache-first) without re-requesting.
     const models = await fetchModels(provider);
+    setCachedModels(provider, models);
     console.log(
       renderTable(
         ['Modelo'],

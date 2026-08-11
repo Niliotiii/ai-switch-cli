@@ -4,9 +4,8 @@ import { renderTable } from "../ui/table.js";
 import { theme } from "../ui/theme.js";
 import { registerProviderFlow } from "./registerProvider.js";
 import { validateUrl } from "../tools/url.js";
-import { setDefaultProviderId, getDefaultProviderId } from "../config/store.js";
 
-type SubmenuOption = "list" | "register" | "edit" | "delete" | "default";
+type SubmenuOption = "list" | "register" | "edit" | "delete";
 
 async function listProvidersFlow(): Promise<void> {
   const providers = listProviders();
@@ -14,9 +13,8 @@ async function listProvidersFlow(): Promise<void> {
     console.log(theme.fail("Nenhum provedor cadastrado."));
     return;
   }
-  const defaultId = getDefaultProviderId();
   const rows = providers.map((p) => [
-    defaultId === p.id ? `${p.name} ${theme.ok("★")}` : p.name,
+    p.name,
     p.anthropicBaseUrl ?? "—",
     p.openaiBaseUrl ?? "—",
     p.createdAt,
@@ -106,30 +104,6 @@ async function deleteProviderFlow(): Promise<void> {
   }
 }
 
-async function setDefaultProviderFlow(): Promise<void> {
-  const providers = listProviders();
-  if (providers.length === 0) {
-    console.log(theme.fail("Nenhum provedor cadastrado para marcar como padrão."));
-    return;
-  }
-  const currentId = getDefaultProviderId();
-  const id = await promptChoiceWithBack(
-    "Selecione o provedor padrão:",
-    providers.map((p) => ({
-      name: p.id === currentId ? `${p.name} ${theme.ok("(atual)")}` : p.name,
-      value: p.id,
-    }))
-  );
-  if (id === null) return; // Voltar → submenu
-  try {
-    setDefaultProviderId(id);
-    const target = providers.find((p) => p.id === id)!;
-    console.log(theme.ok(`\nProvedor padrão definido como "${target.name}".`));
-  } catch (error) {
-    console.log(theme.fail(`Falha ao definir padrão: ${error instanceof Error ? error.message : error}`));
-  }
-}
-
 export async function manageProvidersFlow(): Promise<void> {
   console.log(theme.heading("\nGerenciar Provedores"));
 
@@ -140,7 +114,6 @@ export async function manageProvidersFlow(): Promise<void> {
       { name: "2. Cadastrar", value: "register" },
       { name: "3. Editar", value: "edit" },
       { name: "4. Remover", value: "delete" },
-      { name: "5. Definir padrão", value: "default" },
     ]);
 
     if (choice === null) {
@@ -159,9 +132,6 @@ export async function manageProvidersFlow(): Promise<void> {
         break;
       case "delete":
         await deleteProviderFlow();
-        break;
-      case "default":
-        await setDefaultProviderFlow();
         break;
     }
   }

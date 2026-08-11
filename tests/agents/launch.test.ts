@@ -125,4 +125,64 @@ describe("agent launch", () => {
     });
     expect(() => copilotEnv({ ...provider, openaiBaseUrl: null } as Provider, "m")).toThrow(/URL OpenAI/);
   });
+
+  it("launchAgent com skipPermissions=true concatena skipPermissionsArgs APÓS buildArgs (claude-code)", async () => {
+    const { spawn } = await import("node:child_process");
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const p = launchAgent(def("claude-code"), provider, "claude-sonnet-5", { skipPermissions: true });
+    const call = (spawn as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    expect(call[0]).toBe("claude");
+    // buildArgs = [--model, claude-sonnet-5] THEN skipPermissionsArgs = [--dangerously-skip-permissions]
+    expect(call[1]).toEqual(["--model", "claude-sonnet-5", "--dangerously-skip-permissions"]);
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+  });
+
+  it("launchAgent com skipPermissions=true concatena --full-auto no codex", async () => {
+    const { spawn } = await import("node:child_process");
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const p = launchAgent(def("codex"), provider, "", { skipPermissions: true });
+    const call = (spawn as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    expect(call[0]).toBe("codex");
+    expect(call[1]).toEqual(["--full-auto"]);
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+  });
+
+  it("launchAgent sem options NÃO concatena skipPermissionsArgs mesmo quando o agente os define", async () => {
+    const { spawn } = await import("node:child_process");
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const p = launchAgent(def("claude-code"), provider, "claude-sonnet-5");
+    const call = (spawn as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    expect(call[1]).toEqual(["--model", "claude-sonnet-5"]);
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+  });
+
+  it("launchAgent com skipPermissions=true em agente SEM suporte lança erro claro em vez de adivinhar flag", async () => {
+    // Build a minimal fake agent definition with no skipPermissionsArgs to exercise the guard.
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const unsupported: AgentDefinition = { ...def("copilot"), skipPermissionsArgs: undefined };
+    await expect(launchAgent(unsupported, provider, "gpt-4o", { skipPermissions: true })).rejects.toThrow(/não suporta o modo sem aprovação/);
+  });
+
+  it("launchAgent com skipPermissions=true concatena --yolo no copilot", async () => {
+    const { spawn } = await import("node:child_process");
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const p = launchAgent(def("copilot"), provider, "gpt-4o", { skipPermissions: true });
+    const call = (spawn as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    expect(call[0]).toBe("copilot");
+    // copilot buildArgs is [] so the only arg is --yolo
+    expect(call[1]).toEqual(["--yolo"]);
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+  });
 });

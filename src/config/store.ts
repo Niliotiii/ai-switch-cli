@@ -33,7 +33,6 @@ export function readConfig(): AppConfig {
   const config = parsed as AppConfig;
   return {
     providers: (config.providers ?? []).map(migrateProvider),
-    ...(config.defaultProviderId !== undefined ? { defaultProviderId: config.defaultProviderId } : {}),
     ...(config.lastSelection !== undefined ? { lastSelection: config.lastSelection } : {}),
   };
 }
@@ -44,23 +43,6 @@ export function writeConfig(config: AppConfig): void {
   const file = getConfigFile();
   fs.writeFileSync(file, JSON.stringify(config, null, 2), { mode: 0o600 });
   fs.chmodSync(file, 0o600);
-}
-
-/** Returns the configured default provider id, or null. Validates the provider still exists. */
-export function getDefaultProviderId(): string | null {
-  const { defaultProviderId, providers } = readConfig();
-  if (!defaultProviderId) return null;
-  return providers.some((p) => p.id === defaultProviderId) ? defaultProviderId : null;
-}
-
-/** Sets (or clears with null) the default provider id. Throws if the id is unknown (when non-null). */
-export function setDefaultProviderId(id: string | null): void {
-  const config = readConfig();
-  if (id !== null && !config.providers.some((p) => p.id === id)) {
-    throw new Error(`Provider with id "${id}" not found`);
-  }
-  config.defaultProviderId = id;
-  writeConfig(config);
 }
 
 /** Returns the last agent/provider/model combination launched, or null. */

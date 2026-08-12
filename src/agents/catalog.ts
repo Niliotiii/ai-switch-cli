@@ -13,6 +13,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     homepage: "https://claude.ai/claude-code",
     buildArgs: (_provider, model) => ["--model", model],
     skipPermissionsArgs: ["--dangerously-skip-permissions"],
+    contextFiles: ["CLAUDE.md"],
   },
   codex: {
     id: "codex",
@@ -27,6 +28,7 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     // --full-auto is the openai/codex "yolo" mode (allow-all-tools + allow-all-paths + allow-all-urls,
     // sandboxed network access). Aliased as --yolo by codex itself.
     skipPermissionsArgs: ["--full-auto"],
+    contextFiles: ["AGENTS.md"],
   },
   opencode: {
     id: "opencode",
@@ -49,6 +51,9 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     },
     // --auto is opencode's skip-permissions flag (the alternative is "*": "allow" in opencode.json).
     skipPermissionsArgs: ["--auto"],
+    // opencode compartilha o AGENTS.md com o codex — injectContext deduplica os destinos, então o
+    // mesmo arquivo não é escrito duas vezes quando os dois agentes rodam no mesmo projeto.
+    contextFiles: ["AGENTS.md"],
   },
   copilot: {
     id: "copilot",
@@ -63,6 +68,11 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
     // --yolo is the short alias of --allow-all (allow-all-tools + allow-all-paths + allow-all-urls).
     // In an interactive session the same can be toggled with Shift+Tab or the /yolo slash command.
     skipPermissionsArgs: ["--yolo"],
+    // Só o caminho de custom instructions documentado pelo Copilot. O binário `copilot` não está
+    // instalado nesta máquina para verificar se o CLI também lê AGENTS.md — e um arquivo a mais
+    // escrito no repo do usuário por suposição é pior que contexto de menos. Se for verificado
+    // depois, adicionar "AGENTS.md" aqui é uma linha (e o dedupe já cobre a sobreposição).
+    contextFiles: [".github/copilot-instructions.md"],
   },
 };
 

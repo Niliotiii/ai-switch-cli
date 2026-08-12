@@ -50,6 +50,26 @@ Cada provedor tem **duas URLs base opcionais** (Anthropic e OpenAI); informe ao 
 
 O submenu **Gerenciar Provedores** oferece: listar (sem expor a API key), cadastrar, editar (Enter mantém o valor atual) e remover (confirmação por digitação do nome).
 
+## Contexto entre provedores
+
+Trocar de modelo/provedor não deveria significar redigitar arquitetura, padrões da equipe, decisões já tomadas e o problema atual toda vez. O submenu **Contexto do Projeto** guarda isso uma vez, por projeto (ligado ao diretório onde o `ai-switch` é executado), e injeta um bloco Markdown gerado no arquivo de instruções que cada agente já lê nativamente ao iniciar:
+
+| Agente | Arquivo injetado |
+| --- | --- |
+| Claude Code | `CLAUDE.md` |
+| OpenAI Codex | `AGENTS.md` |
+| opencode | `AGENTS.md` |
+| GitHub Copilot CLI | `.github/copilot-instructions.md` |
+
+Como funciona:
+
+- **Opt-in explícito.** Criar um contexto não injeta nada — é preciso ativar a injeção no submenu (opção "Ativar injeção"), que lista os arquivos exatos antes de confirmar. Sem essa ativação, nada é escrito no seu repositório.
+- **Merge idempotente.** O bloco é delimitado por marcadores (`<!-- ai-switch:context:start/end -->`); só essa região é sobrescrita a cada launch — o resto do arquivo (suas próprias instruções manuais) nunca é tocado. Rodar de novo não duplica o bloco.
+- **Histórico entre modelos.** Ao encerrar um agente com sucesso, o CLI pergunta um resumo de uma linha (Enter pula). Esse resumo — junto com agente, provedor e modelo usados — entra no "Histórico entre modelos" do bloco, para que a **próxima** sessão, possivelmente em outro provedor, continue de onde a anterior parou em vez de você repetir tudo.
+- **Teto de tamanho.** Só as 8 sessões mais recentes e as 30 decisões mais recentes são renderizadas, e cada resumo é truncado em 500 caracteres — o objetivo é reduzir retrabalho e tokens, não recriar o mesmo desperdício por outro caminho.
+
+> **Segurança:** o pack de contexto nunca guarda a `apiKey` — o histórico identifica o provedor pelo nome, não pela credencial. O bloco injetado é só texto que você escreveu (arquitetura, padrões, decisões, resumos); revise antes de ativar a injeção se o repositório for compartilhado.
+
 ## Desenvolvimento
 
 Para contribuir ou rodar a partir do código-fonte:

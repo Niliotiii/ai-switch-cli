@@ -25,10 +25,11 @@ O principal objetivo da aplicação é eliminar a complexidade e os altos custos
 - As funcionalidades principais acessíveis pelo menu incluem:
   1. **Iniciar Ferramenta:** Seleção integrada da ferramenta de desenvolvimento desejada, do provedor de IA, do modelo e do agente de atuação.
   2. **Cadastrar Novo Provedor:** Inclusão de novos serviços de IA.
-  3. **Ver Modelos:** Consulta aos modelos suportados pelo provedor selecionado.
-  4. **Ver Agents:** Listagem dos perfis ou modos de operação configurados.
-  5. **Diagnóstico:** Verificação de integridade do ambiente e status de conexão com os provedores.
-  6. **Sair:** Encerramento da aplicação.
+  3. **Contexto do Projeto:** Gestão do contexto compartilhado entre agentes e provedores (ver 3.6).
+  4. **Ver Modelos:** Consulta aos modelos suportados pelo provedor selecionado.
+  5. **Ver Agents:** Listagem dos perfis ou modos de operação configurados.
+  6. **Diagnóstico:** Verificação de integridade do ambiente e status de conexão com os provedores.
+  7. **Sair:** Encerramento da aplicação.
 
 ### 3.2. Gerenciamento de Provedores
 
@@ -51,6 +52,15 @@ O principal objetivo da aplicação é eliminar a complexidade e os altos custos
 ### 3.5. Inicialização Unificada (Start)
 
 - Ao iniciar uma ferramenta de desenvolvimento, o sistema deve aplicar automaticamente as credenciais, rotas e parâmetros correspondentes ao provedor e modelo selecionados, garantindo a compatibilidade esperada pela ferramenta de destino.
+
+### 3.6. Contexto Compartilhado Entre Provedores
+
+- O sistema deve permitir o cadastro de um contexto por projeto (arquitetura, padrões da equipe, decisões já tomadas e o problema atual), evitando que o usuário precise redigitar essas informações a cada troca de ferramenta ou provedor.
+- A injeção desse contexto nos arquivos de instruções nativos de cada ferramenta (ex.: `CLAUDE.md`, `AGENTS.md`) deve ser opt-in — o sistema nunca escreve no repositório do usuário sem confirmação explícita, e a operação deve listar previamente os arquivos afetados.
+- A injeção deve preservar todo conteúdo pré-existente nesses arquivos, delimitando a região gerada pela ferramenta para permitir atualizações idempotentes (sem duplicação e sem sobrescrever anotações manuais do usuário).
+- Ao final de cada sessão de uso bem-sucedida, o sistema deve oferecer o registro de um resumo do que foi avançado, associado à ferramenta, ao provedor e ao modelo utilizados, formando um histórico que a próxima sessão — potencialmente em outro provedor ou modelo — possa consultar para manter continuidade.
+- O volume de histórico e decisões injetado deve ser limitado, para que o mecanismo de continuidade não recrie, por si mesmo, o consumo excessivo de tokens que o recurso busca eliminar.
+- O contexto do projeto não deve armazenar nem expor credenciais de provedores em nenhum momento.
 
 ---
 

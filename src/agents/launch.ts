@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
-import type { AgentDefinition, Provider } from "../types.js";
+import type { AgentDefinition, ContextPack, Provider } from "../types.js";
 import { anthropicEnv, openaiEnv } from "../tools/env.js";
+import { injectContext } from "../context/inject.js";
 
 export function buildAgentEnv(agent: AgentDefinition, provider: Provider | null, model: string): Record<string, string> {
   // prepareLaunch agents (opencode) use a config file, not env vars — return {} so no OPENAI_* leaks.
@@ -13,6 +14,14 @@ export interface LaunchOptions {
   /** When true, append the agent's `skipPermissionsArgs` to the spawned command (no-approval mode).
    *  Throws if the agent has no `skipPermissionsArgs` — never silently pass a guessed flag. */
   skipPermissions?: boolean;
+  /** When present, merges this project's context pack into the agent's `contextFiles` before spawn
+   *  (no-op if `pack.injectionEnabled` is false). A throw here (e.g. an orphaned marker in the
+   *  target file) propagates and aborts the launch — the caller decides whether to retry without
+   *  context, launchAgent itself never launches silently without the context it was asked to inject.
+   *  `startTool.ts` deliberately does NOT use this field — it calls `injectContext` directly so its
+   *  own try/catch wraps injection alone, not the whole launch (including the spawn). This option
+   *  exists for callers that want injection folded into a single call (see tests/agents/launch.test.ts). */
+  context?: ContextPack;
 }
 
 export async function launchAgent(
@@ -28,6 +37,11 @@ export async function launchAgent(
       // this prompt, so reaching here means a programming error — surface it loudly.
       throw new Error(`O agente "${agent.label}" não suporta o modo sem aprovação (sem flag pública conhecida).`);
     }
+  }
+  // Must land on disk before the agent boots and reads its instructions file, so this runs before
+  // prepareLaunch and the spawn itself.
+  if (options.context) {
+    injectContext(options.context, agent);
   }
   // prepareLaunch runs side effects before spawn (e.g. write the opencode.json provider entry).
   if (agent.prepareLaunch && provider !== null) {

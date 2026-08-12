@@ -153,6 +153,48 @@ describe("injectContext", () => {
     expect(existsSync(path.join(path.dirname(tmpDir), "etc", "passwd"))).toBe(false);
   });
 
+  it("integração ponta a ponta (rodada 4): texto de arquitetura citando END+START literalmente não perde conteúdo no segundo launch", async () => {
+    // Reprodução do achado da rodada 4: mergeContextBlock só validava `existing`, nunca o `block`
+    // recém-renderizado. Um pack cujo texto livre (architecture, aqui) contém END_MARKER seguido de
+    // START_MARKER literalmente cria uma 3ª e 4ª ocorrência de marcador no arquivo escrito pelo
+    // PRIMEIRO launch. No SEGUNDO launch (outro pack, texto benigno), o merge via BLOCK_RE casava o
+    // START real com o END mais próximo — que era o embutido no meio do texto antigo — apagando
+    // parte do conteúdo em silêncio. Este teste usa renderContextMarkdown de verdade (não markers
+    // escritos à mão) para provar que a sanitização em render.ts fecha o buraco ponta a ponta.
+    const { injectContext } = await import("../../src/context/inject.js");
+    const first = injectContext(
+      pack({ sections: { architecture: `FOO ${END_MARKER} MIDDLE ${START_MARKER} BAR`, patterns: "", goal: "", decisions: [] } }),
+      agentStub(["CLAUDE.md"]),
+    );
+    const file = first[0]!;
+    const afterFirstLaunch = readFileSync(file, "utf-8");
+    expect(afterFirstLaunch).toContain("FOO");
+    expect(afterFirstLaunch).toContain("MIDDLE");
+    expect(afterFirstLaunch).toContain("BAR");
+
+    // Segundo launch: pack diferente, texto benigno — não deve tocar no conteúdo do primeiro launch
+    // de forma destrutiva; o merge deve continuar funcionando (idempotente/substituível), sem apagar
+    // nada em silêncio.
+    injectContext(
+      pack({ sections: { architecture: "NOVA ARQUITETURA SEGURA", patterns: "", goal: "", decisions: [] } }),
+      agentStub(["CLAUDE.md"]),
+    );
+    const afterSecondLaunch = readFileSync(file, "utf-8");
+    expect(afterSecondLaunch).toContain("NOVA ARQUITETURA SEGURA");
+    // O bug real (verificado rodando o código sem a sanitização antes de escrever este teste):
+    // "BAR" desaparecia por completo e "MIDDLE" sobrava como texto órfão colado a um END solto — só
+    // checar "contém NOVA ARQUITETURA" não pega isso, então a asserção crítica é que NADA do texto
+    // do primeiro launch (nem o benigno FOO/MIDDLE/BAR, nem os fragmentos de marcador) sobrevive
+    // fora de controle depois do segundo launch substituir o bloco inteiro.
+    expect(afterSecondLaunch).not.toContain("FOO");
+    expect(afterSecondLaunch).not.toContain("MIDDLE");
+    expect(afterSecondLaunch).not.toContain("BAR");
+    // A ocorrência extra de marcador (vinda do texto do usuário no 1º launch) não deve mais existir
+    // — foi sanitizada na origem — então não há como o 2º launch mis-parear e perder conteúdo.
+    expect(afterSecondLaunch.split(START_MARKER).length - 1).toBe(1);
+    expect(afterSecondLaunch.split(END_MARKER).length - 1).toBe(1);
+  });
+
   it("preserva a permissão do arquivo existente através do write atômico (temp file + rename)", async () => {
     const { injectContext } = await import("../../src/context/inject.js");
     const file = path.join(tmpDir, "CLAUDE.md");

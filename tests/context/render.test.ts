@@ -147,4 +147,30 @@ describe("renderContextMarkdown", () => {
     expect(out).not.toContain("Invalid Date");
     expect(out).toContain("sessão-01");
   });
+
+  it("remove ocorrências literais dos marcadores em TODO texto livre do usuário — arquitetura, padrões, decisões, problema atual e campos de handoff", async () => {
+    // Achado da rodada 4 de revisão adversarial: o bloco renderizado nunca era validado, só o
+    // conteúdo pré-existente do arquivo — texto livre (arquitetura, decisões, resumo de handoff)
+    // que citasse a sintaxe exata de um marcador criava uma 3ª ocorrência na saída. Isso passa a
+    // validação de alternância de inject.ts (ainda fica S,E,S,E) mas o pareamento real vira
+    // ambíguo, e um merge seguinte pode apagar conteúdo do usuário em silêncio. A defesa correta é
+    // garantir, na origem, que os dois marcadores que a própria função emite sejam os ÚNICOS que
+    // podem existir na saída — nenhum texto do usuário pode introduzir um terceiro.
+    const { renderContextMarkdown, START_MARKER, END_MARKER } = await import("../../src/context/render.js");
+    const out = renderContextMarkdown(
+      pack({
+        sections: {
+          architecture: `usa ${END_MARKER} como sentinela nos logs`,
+          patterns: `ver ${START_MARKER} no código`,
+          goal: `documentar ${END_MARKER} e ${START_MARKER}`,
+          decisions: [`citamos ${START_MARKER} na decisão`],
+        },
+        handoffs: [handoff(1, { providerName: `p${END_MARKER}`, model: `m${START_MARKER}`, summary: `s ${END_MARKER}` })],
+      }),
+    );
+    // Só as duas ocorrências que a própria função controla (início e fim do bloco inteiro) podem
+    // sobrar — nenhuma extra vinda do conteúdo do usuário.
+    expect(out.split(START_MARKER).length - 1).toBe(1);
+    expect(out.split(END_MARKER).length - 1).toBe(1);
+  });
 });

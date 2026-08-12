@@ -12,6 +12,22 @@ export const MAX_HANDOFFS = 8;
 export const MAX_DECISIONS = 30;
 export const MAX_SUMMARY_CHARS = 500;
 
+/**
+ * Remove qualquer ocorrência literal dos marcadores de todo texto livre digitado pelo usuário antes
+ * de ele entrar no bloco renderizado — arquitetura, padrões, decisões, resumos de handoff, nome do
+ * provedor, modelo. Sem isso, um texto que cita a sintaxe do próprio marcador (ex.: alguém
+ * documentando esta feature, ou copiando um trecho que menciona `<!-- ai-switch:context:end -->`)
+ * criaria uma terceira ocorrência de marcador no bloco. `inject.ts` confia que todo texto no formato
+ * de um marcador É um delimitador real — com uma ocorrência extra vinda do CONTEÚDO em vez da
+ * ESTRUTURA, um merge futuro pode ficar com uma alternância S,E,S,E que passa a validação de
+ * `hasWellFormedMarkerPairing` mas cujo pareamento real (START verdadeiro → END mais próximo) não
+ * é o que parece, apagando conteúdo do usuário em silêncio. Isso garante que os dois marcadores que
+ * NÓS emitimos (start/end do bloco inteiro) sejam sempre os únicos que existem na saída.
+ */
+function stripMarkers(text: string): string {
+  return text.split(START_MARKER).join("").split(END_MARKER).join("");
+}
+
 function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
@@ -32,9 +48,9 @@ function formatDate(at: string): string | null {
 
 function renderHandoff(h: ContextHandoff): string {
   const date = formatDate(h.at);
-  const who = `${h.agentId} (${h.providerName} · ${h.model})`;
+  const who = `${h.agentId} (${stripMarkers(h.providerName)} · ${stripMarkers(h.model)})`;
   const head = date ? `${date} · ${who}` : who;
-  return `- ${head}: ${truncate(oneLine(h.summary), MAX_SUMMARY_CHARS)}`;
+  return `- ${head}: ${truncate(oneLine(stripMarkers(h.summary)), MAX_SUMMARY_CHARS)}`;
 }
 
 /**
@@ -58,17 +74,17 @@ export function renderContextMarkdown(pack: ContextPack): string {
   const { architecture, patterns, goal, decisions } = pack.sections;
 
   if (architecture.trim()) {
-    lines.push("", "### Arquitetura", architecture.trim());
+    lines.push("", "### Arquitetura", stripMarkers(architecture.trim()));
   }
   if (patterns.trim()) {
-    lines.push("", "### Padrões da equipe", patterns.trim());
+    lines.push("", "### Padrões da equipe", stripMarkers(patterns.trim()));
   }
   const kept = decisions.filter((d) => d.trim()).slice(-MAX_DECISIONS);
   if (kept.length > 0) {
-    lines.push("", "### Decisões já tomadas", ...kept.map((d) => `- ${oneLine(d)}`));
+    lines.push("", "### Decisões já tomadas", ...kept.map((d) => `- ${oneLine(stripMarkers(d))}`));
   }
   if (goal.trim()) {
-    lines.push("", "### Problema atual", goal.trim());
+    lines.push("", "### Problema atual", stripMarkers(goal.trim()));
   }
 
   const handoffs = pack.handoffs.slice(-MAX_HANDOFFS);

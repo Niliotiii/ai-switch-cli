@@ -47,8 +47,13 @@ export const AGENT_CATALOG: Record<AgentId, AgentDefinition> = {
       if (!provider) throw new Error("opencode requer um provedor (buildArgs)");
       return ["-m", `${opencodeProviderKey(provider)}/${model}`];
     },
-    // --auto is opencode's skip-permissions flag (the alternative is "*": "allow" in opencode.json).
-    skipPermissionsArgs: ["--auto"],
+    // opencode (verified v1.16.2) has NO skip-permissions flag for the default TUI mode this launch
+    // targets — `--auto` never existed on the installed CLI and made yargs print --help and exit 1,
+    // killing the launch before the TUI even started (confirmed by running `opencode -m x/y --auto`
+    // directly). `--dangerously-skip-permissions` does exist, but only under the `opencode run`
+    // one-shot subcommand, not the interactive `opencode [project]` default command ai-switch uses —
+    // switching subcommands would change the whole UX, so left unset here instead of guessing another
+    // flag. Revisit if/when opencode exposes an equivalent for the TUI entrypoint.
   },
   copilot: {
     id: "copilot",

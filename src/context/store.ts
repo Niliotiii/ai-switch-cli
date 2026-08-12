@@ -40,10 +40,23 @@ function normalize(raw: Partial<ContextPack>): ContextPack {
   };
 }
 
-/** Writes via a temp file + rename in the same directory instead of writing `file` directly.
- *  `rename()` is atomic on POSIX within a filesystem, so a crash or power loss mid-write leaves
- *  either the old content or the new one, never a truncated/corrupt JSON file — which otherwise
- *  `readPackStrict` would have no way to recover from except telling the user to fix it by hand. */
+/**
+ * Writes via a temp file + rename in the same directory instead of writing `file` directly.
+ * `rename()` is atomic on POSIX within a filesystem, so a crash or power loss mid-write leaves
+ * either the old content or the new one, never a truncated/corrupt JSON file — which otherwise
+ * `readPackStrict` would have no way to recover from except telling the user to fix it by hand.
+ *
+ * KNOWN LIMITATION (accepted, not fixed): this makes each individual write crash-safe, but does
+ * NOT make the read-modify-write cycle in `createContextPack`/`updateContextPack`/`appendHandoff`
+ * atomic across processes. Two `ai-switch` instances running concurrently against the same project
+ * (e.g. two terminals switching agents on the same repo) can race: both read the same snapshot,
+ * both compute an update, the second `writePack` silently clobbers the first — a lost handoff or
+ * edit, not a corrupted file. Verified by spawning concurrent real processes against the same pack.
+ * Accepted for now because this is a single-user local CLI (the realistic worst case is losing one
+ * handoff note, not data corruption) and a proper fix (file locking or a compare-and-swap on
+ * `updatedAt`) isn't worth the complexity unless multi-process usage on the same project turns out
+ * to be common. If that changes, this is the function to add locking/CAS around.
+ */
 function writePack(file: string, pack: ContextPack): void {
   fs.mkdirSync(getContextsDir(), { recursive: true, mode: 0o700 });
   const tmp = `${file}.tmp-${randomUUID()}`;

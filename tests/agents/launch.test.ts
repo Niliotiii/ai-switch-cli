@@ -8,6 +8,7 @@ vi.mock("../../src/agents/opencode-config.js", () => ({
   syncOpencodeProvider: vi.fn(),
   opencodeProviderKey: (p: { name: string; id: string }) => `ai-switch-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || p.id}`,
 }));
+vi.mock("../../src/context/inject.js", () => ({ injectContext: vi.fn() }));
 
 const provider: Provider = {
   id: "1", name: "openrouter",
@@ -18,6 +19,17 @@ const provider: Provider = {
 };
 
 const def = (id: string) => listAgentDefinitions().find((a) => a.id === id) as AgentDefinition;
+
+const contextPack = {
+  id: "ctx-1",
+  name: "p",
+  projectPath: "/repos/p",
+  injectionEnabled: true,
+  sections: { architecture: "x", patterns: "", goal: "", decisions: [] },
+  handoffs: [],
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+} as import("../../src/types.js").ContextPack;
 
 beforeEach(() => { vi.resetAllMocks(); });
 
@@ -184,5 +196,52 @@ describe("agent launch", () => {
     expect(call[1]).toEqual(["--yolo"]);
     fakeChild.emit("exit", 0);
     await expect(p).resolves.toBe(0);
+  });
+
+  it("launchAgent com options.context chama injectContext(pack, agent) ANTES do spawn", async () => {
+    const { spawn } = await import("node:child_process");
+    const { injectContext } = await import("../../src/context/inject.js");
+    const callOrder: string[] = [];
+    (injectContext as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      callOrder.push("inject");
+      return ["/repos/p/CLAUDE.md"];
+    });
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      callOrder.push("spawn");
+      return fakeChild;
+    });
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const agent = def("claude-code");
+    const p = launchAgent(agent, provider, "claude-sonnet-5", { context: contextPack });
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+    expect(injectContext).toHaveBeenCalledWith(contextPack, agent);
+    expect(callOrder).toEqual(["inject", "spawn"]);
+  });
+
+  it("launchAgent sem options.context não chama injectContext", async () => {
+    const { spawn } = await import("node:child_process");
+    const { injectContext } = await import("../../src/context/inject.js");
+    const fakeChild = new EventEmitter();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeChild);
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const p = launchAgent(def("claude-code"), provider, "claude-sonnet-5");
+    fakeChild.emit("exit", 0);
+    await expect(p).resolves.toBe(0);
+    expect(injectContext).not.toHaveBeenCalled();
+  });
+
+  it("launchAgent propaga o throw de injectContext e NÃO faz spawn", async () => {
+    const { spawn } = await import("node:child_process");
+    const { injectContext } = await import("../../src/context/inject.js");
+    (injectContext as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      throw new Error("marcador de início sem o de fim");
+    });
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    await expect(launchAgent(def("claude-code"), provider, "claude-sonnet-5", { context: contextPack })).rejects.toThrow(
+      /marcador de início sem o de fim/,
+    );
+    expect(spawn).not.toHaveBeenCalled();
   });
 });

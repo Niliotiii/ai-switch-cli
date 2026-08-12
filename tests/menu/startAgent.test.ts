@@ -18,6 +18,10 @@ vi.mock("../../src/context/store.js", () => ({
   createContextPack: vi.fn(),
   appendHandoff: vi.fn(),
 }));
+// Must be mocked — a real injectContext() call would write CLAUDE.md/AGENTS.md into whatever
+// process.cwd() happens to be when the test runs (there's no AI_SWITCH_PROJECT_DIR override here),
+// which previously landed a real CLAUDE.md inside this very repo.
+vi.mock("../../src/context/inject.js", () => ({ injectContext: vi.fn(() => []) }));
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(async () => "claude-code"),
   confirm: vi.fn(async () => false),
@@ -44,6 +48,10 @@ beforeEach(async () => {
   // the post-launch handoff prompt. Tests below override this per case.
   const { getContextPackForProject } = await import("../../src/context/store.js");
   (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(disabledPack);
+  // Defense in depth against the mockImplementation-leak class of bug: explicitly restore
+  // injectContext's default (no-op) behavior every test, regardless of what a prior test configured.
+  const { injectContext } = await import("../../src/context/inject.js");
+  (injectContext as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => []);
 });
 
 describe("startToolFlow", () => {
@@ -240,17 +248,80 @@ describe("startToolFlow — injeção de contexto e handoff", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
   }
 
-  it("pack habilitado: launchAgent recebe { context: pack } além de skipPermissions", async () => {
+  it("pack habilitado: injectContext é chamado com (pack, agent) e launchAgent NÃO recebe context (injeção já aconteceu)", async () => {
+    await setupClaudeCodeHappyPath();
+    const { getContextPackForProject } = await import("../../src/context/store.js");
+    (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(enabledPack);
+    const { injectContext } = await import("../../src/context/inject.js");
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const { startToolFlow } = await import("../../src/menu/startTool.js");
+    await startToolFlow();
+    expect(injectContext).toHaveBeenCalledWith(enabledPack, getAgentDefinition("claude-code"));
+    expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("claude-code"), provider, "claude-sonnet-5", {
+      skipPermissions: false,
+    });
+  });
+
+  it("injectContext lança: mostra falha, pergunta para continuar; aceitando, launchAgent roda sem context", async () => {
+    await setupClaudeCodeHappyPath();
+    const { getContextPackForProject } = await import("../../src/context/store.js");
+    (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(enabledPack);
+    const { injectContext } = await import("../../src/context/inject.js");
+    // mockImplementationOnce (not mockImplementation) — vi.clearAllMocks() in beforeEach clears
+    // call history but NOT a persistent base implementation, so a plain mockImplementation() here
+    // would leak into every test that runs after this one in the file.
+    (injectContext as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error("marcador de início sem o de fim");
+    });
+    const { confirm } = await import("@inquirer/prompts");
+    (confirm as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false); // skip-permission: não
+    (confirm as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(true); // "Continuar sem contexto?": sim
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...a) => { logs.push(a.join(" ")); });
+    const { startToolFlow } = await import("../../src/menu/startTool.js");
+    await startToolFlow();
+    expect(logs.join("\n")).toMatch(/Falha ao injetar contexto/);
+    expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("claude-code"), provider, "claude-sonnet-5", {
+      skipPermissions: false,
+    });
+  });
+
+  it("injectContext lança: recusando continuar, launchAgent NÃO é chamado e o fluxo retorna", async () => {
+    await setupClaudeCodeHappyPath();
+    const { getContextPackForProject } = await import("../../src/context/store.js");
+    (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(enabledPack);
+    const { injectContext } = await import("../../src/context/inject.js");
+    // mockImplementationOnce (not mockImplementation) — vi.clearAllMocks() in beforeEach clears
+    // call history but NOT a persistent base implementation, so a plain mockImplementation() here
+    // would leak into every test that runs after this one in the file.
+    (injectContext as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error("marcador de início sem o de fim");
+    });
+    const { confirm } = await import("@inquirer/prompts");
+    (confirm as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false); // skip-permission: não
+    (confirm as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false); // "Continuar sem contexto?": não
+    const { launchAgent } = await import("../../src/agents/launch.js");
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const { startToolFlow } = await import("../../src/menu/startTool.js");
+    await startToolFlow();
+    expect(launchAgent).not.toHaveBeenCalled();
+  });
+
+  it("uma falha de spawn (launchAgent rejeita) NÃO é mascarada como falha de injeção de contexto", async () => {
     await setupClaudeCodeHappyPath();
     const { getContextPackForProject } = await import("../../src/context/store.js");
     (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(enabledPack);
     const { launchAgent } = await import("../../src/agents/launch.js");
+    (launchAgent as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("ENOENT: claude não encontrado"));
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...a) => { logs.push(a.join(" ")); });
     const { startToolFlow } = await import("../../src/menu/startTool.js");
-    await startToolFlow();
-    expect(launchAgent).toHaveBeenCalledWith(getAgentDefinition("claude-code"), provider, "claude-sonnet-5", {
-      skipPermissions: false,
-      context: enabledPack,
-    });
+    await expect(startToolFlow()).rejects.toThrow(/ENOENT/);
+    // A falha de spawn não deve ser rotulada como falha de contexto, nem disparar o retry sem
+    // contexto — só o injectContext (que aqui nem foi mockado para lançar) tem essa semântica.
+    expect(logs.join("\n")).not.toMatch(/Falha ao injetar contexto/);
+    expect(launchAgent).toHaveBeenCalledTimes(1);
   });
 
   it("exit 0 + resumo digitado → appendHandoff com agente/provedor/modelo certos", async () => {

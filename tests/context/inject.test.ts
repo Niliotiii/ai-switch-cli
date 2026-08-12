@@ -62,6 +62,24 @@ describe("mergeContextBlock", () => {
     expect(() => mergeContextBlock(existing, `${START_MARKER}\nX\n${END_MARKER}`)).toThrow(/manual/i);
   });
 
+  it("END aparece antes de um START sem fim: dá throw em vez de retornar o arquivo inalterado sem avisar", async () => {
+    // Regressão: hasStart && hasEnd eram ambos true aqui, então o guard antigo ("start sem end")
+    // não disparava; o replace() não encontrava nenhum START→END válido (o END vem ANTES do START)
+    // e a função devolvia `existing` byte a byte igual — o bloco novo nunca era escrito e nenhum
+    // erro avisava o usuário. injectContext reportaria o arquivo como "escrito" sem ele ter mudado.
+    const { mergeContextBlock } = await import("../../src/context/inject.js");
+    const existing = `foo\n${END_MARKER}\nbar\n${START_MARKER}\nsem fim aqui`;
+    const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
+    expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
+  });
+
+  it("só o marcador de fim presente (sem início): dá throw em vez de prependar ao lado de um END órfão", async () => {
+    const { mergeContextBlock } = await import("../../src/context/inject.js");
+    const existing = `prosa do usuário\n${END_MARKER}\nmais prosa`;
+    const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
+    expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
+  });
+
   it("múltiplas ocorrências do bloco: substitui a primeira e remove as demais (auto-cura de merge de git)", async () => {
     const { mergeContextBlock } = await import("../../src/context/inject.js");
     const dup = `${START_MARKER}\nA\n${END_MARKER}\nmeio\n${START_MARKER}\nB\n${END_MARKER}`;
@@ -92,6 +110,12 @@ describe("injectContext", () => {
     expect(written).toEqual([file]);
     expect(existsSync(file)).toBe(true);
     expect(readFileSync(file, "utf-8")).toContain("arquitetura x");
+  });
+
+  it("dá throw e não escreve nada se contextFiles tentar escapar da raiz do projeto", async () => {
+    const { injectContext } = await import("../../src/context/inject.js");
+    expect(() => injectContext(pack(), agentStub(["../../etc/passwd"]))).toThrow(/escapa da raiz do projeto/);
+    expect(existsSync(path.join(path.dirname(tmpDir), "etc", "passwd"))).toBe(false);
   });
 
   it("preserva prosa preexistente do usuário", async () => {

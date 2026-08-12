@@ -40,9 +40,15 @@ function normalize(raw: Partial<ContextPack>): ContextPack {
   };
 }
 
+/** Writes via a temp file + rename in the same directory instead of writing `file` directly.
+ *  `rename()` is atomic on POSIX within a filesystem, so a crash or power loss mid-write leaves
+ *  either the old content or the new one, never a truncated/corrupt JSON file — which otherwise
+ *  `readPackStrict` would have no way to recover from except telling the user to fix it by hand. */
 function writePack(file: string, pack: ContextPack): void {
   fs.mkdirSync(getContextsDir(), { recursive: true, mode: 0o700 });
-  fs.writeFileSync(file, JSON.stringify(pack, null, 2), { mode: 0o600 });
+  const tmp = `${file}.tmp-${randomUUID()}`;
+  fs.writeFileSync(tmp, JSON.stringify(pack, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, file);
   fs.chmodSync(file, 0o600);
 }
 

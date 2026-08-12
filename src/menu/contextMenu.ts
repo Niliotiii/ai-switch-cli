@@ -72,15 +72,19 @@ async function toggleInjectionFlow(pack: ContextPack): Promise<void> {
   console.log(theme.ok("\nInjeção ativada. Os arquivos exatos dependem do agente escolhido em \"Iniciar Agent\"."));
 }
 
-async function deleteFlow(pack: ContextPack): Promise<void> {
+/** Returns true only when the pack was actually deleted — a mistyped confirmation must NOT be
+ *  treated the same as a successful delete by the caller (which decides whether to exit the
+ *  submenu). */
+async function deleteFlow(pack: ContextPack): Promise<boolean> {
   const confirmPhrase = `remover ${pack.name}`;
   const typed = await promptText(`Esta ação é permanente. Digite exatamente "${confirmPhrase}" para confirmar:`);
   if (typed !== confirmPhrase) {
     console.log(theme.fail("Confirmação não confere. Contexto não foi removido."));
-    return;
+    return false;
   }
   const removed = deleteContextPack(pack.id);
   console.log(theme.ok(`\nContexto "${removed.name}" removido com sucesso.`));
+  return true;
 }
 
 export async function contextMenuFlow(): Promise<void> {
@@ -129,11 +133,16 @@ export async function contextMenuFlow(): Promise<void> {
       case "toggle-injection":
         await toggleInjectionFlow(pack);
         break;
-      case "delete":
-        await deleteFlow(pack);
-        // O pack pode ter sido removido — sair do submenu em vez de operar sobre um id inexistente.
-        inSubmenu = false;
-        continue;
+      case "delete": {
+        const deleted = await deleteFlow(pack);
+        // Só sai do submenu quando o pack foi de fato removido — uma confirmação digitada errada
+        // (typo, ou o usuário desistindo) deve devolver ao mesmo submenu, não ao menu principal.
+        if (deleted) {
+          inSubmenu = false;
+          continue;
+        }
+        break;
+      }
     }
     // Cada ação (exceto view/history) pode ter persistido mudanças — relê para as próximas iterações
     // do loop refletirem o estado atual (ex.: o rótulo "Ativar/Desativar injeção").

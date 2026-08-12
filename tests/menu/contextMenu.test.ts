@@ -143,4 +143,27 @@ describe("contextMenuFlow", () => {
     expect(deleteContextPack).toHaveBeenCalledWith("ctx-1");
     vi.resetModules();
   });
+
+  it("regressão: digitar a confirmação errada em 'remover' mantém o submenu aberto em vez de sair para o menu principal", async () => {
+    // Antes da correção, o case "delete" sempre setava inSubmenu = false, mesmo quando a
+    // confirmação não conferia e nada foi removido — um typo expulsava o usuário do submenu.
+    const promptChoiceWithBack = vi
+      .fn()
+      .mockResolvedValueOnce("delete")
+      .mockResolvedValueOnce(null); // só alcançável se o loop continuar após a confirmação errada
+    vi.doMock("../../src/ui/prompts.js", () => ({
+      promptChoiceWithBack,
+      promptText: vi.fn(async () => "confirmação errada"),
+      promptConfirm: vi.fn(),
+    }));
+    const { getContextPackForProject, deleteContextPack } = await import("../../src/context/store.js");
+    (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(pack({ name: "meu-projeto" }));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const { contextMenuFlow } = await import("../../src/menu/contextMenu.js");
+    await contextMenuFlow();
+    expect(deleteContextPack).not.toHaveBeenCalled();
+    // Duas chamadas prova que o loop pediu uma opção de novo em vez de sair após a primeira.
+    expect(promptChoiceWithBack).toHaveBeenCalledTimes(2);
+    vi.resetModules();
+  });
 });

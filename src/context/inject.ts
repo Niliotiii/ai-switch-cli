@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { AgentDefinition, ContextPack } from "../types.js";
@@ -25,18 +26,24 @@ const BLOCK_RE = new RegExp(`${escapeRegExp(START_MARKER)}[\\s\\S]*?${escapeRegE
  * - Arquivo com os dois marcadores: substitui só a região entre eles (idempotente). Se houver mais
  *   de uma ocorrência, a primeira é substituída e as demais removidas — auto-cura de um merge de git
  *   que duplicou o bloco.
- * - Marcador de início sem o de fim (edição manual truncou o arquivo): dá throw. Adivinhar onde a
- *   região deveria terminar arriscaria apagar conteúdo do usuário.
+ * - Marcadores ausentes, truncados ou fora de ordem (edição manual corrompeu o arquivo): dá throw.
+ *   Adivinhar onde a região deveria começar/terminar arriscaria apagar conteúdo do usuário.
  */
 export function mergeContextBlock(existing: string | null, block: string): string {
   if (existing === null) return `${block}\n`;
 
   const hasStart = existing.includes(START_MARKER);
   const hasEnd = existing.includes(END_MARKER);
-  if (hasStart && !hasEnd) {
+  // Um START sem par de END encontrável pelo BLOCK_RE cobre não só "START sem END" como "END
+  // aparece antes de um START sem fim" — nesse segundo caso hasStart e hasEnd são ambos true, mas
+  // o regex START→END não casa nada porque não há END *depois* do START. Sem esse teste, o código
+  // caía direto no replace(), não substituía nada (nenhum match) e retornava o arquivo inalterado
+  // sem avisar — perda silenciosa do bloco em vez de throw ou prepend.
+  const wellFormedPair = new RegExp(BLOCK_RE.source).test(existing);
+  if ((hasStart || hasEnd) && !wellFormedPair) {
     throw new Error(
-      `Encontrado "${START_MARKER}" sem o marcador de fim correspondente — o arquivo parece ter sido ` +
-        `editado manualmente. Corrija a região do ai-switch manualmente antes de continuar.`,
+      `Marcadores do ai-switch ("${START_MARKER}" / "${END_MARKER}") ausentes, truncados ou fora de ` +
+        `ordem — o arquivo parece ter sido editado manualmente. Corrija a região do ai-switch manualmente antes de continuar.`,
     );
   }
   if (!hasStart) {
@@ -67,10 +74,27 @@ export function injectContext(pack: ContextPack, agent: AgentDefinition): string
   const block = renderContextMarkdown(pack);
   const targets = [...new Set(agent.contextFiles)].map((f) => path.join(root, f));
 
+  // `AgentDefinition.contextFiles` is documented (src/types.ts) as "relative, never escaping the
+  // project root" but nothing enforced that — every entry today is a hardcoded literal in the
+  // catalog, so this isn't reachable yet, but it's a one-line guard against a future 5th agent (or
+  // an editable catalog) smuggling a `../../etc/whatever` path and writing outside the project.
+  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  for (const file of targets) {
+    if (!file.startsWith(rootWithSep)) {
+      throw new Error(`contextFiles inválido: "${file}" escapa da raiz do projeto "${root}"`);
+    }
+  }
+
   for (const file of targets) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const existing = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : null;
-    fs.writeFileSync(file, mergeContextBlock(existing, block), "utf-8");
+    const merged = mergeContextBlock(existing, block);
+    // Temp file + rename instead of a direct write — this is the user's own CLAUDE.md/AGENTS.md
+    // (possibly hand-edited, possibly tracked in git); a crash mid-write must never leave it
+    // truncated. rename() is atomic on POSIX within the same directory/filesystem.
+    const tmp = path.join(path.dirname(file), `.${path.basename(file)}.ai-switch-tmp-${randomUUID()}`);
+    fs.writeFileSync(tmp, merged, "utf-8");
+    fs.renameSync(tmp, file);
   }
   return targets;
 }

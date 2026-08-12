@@ -36,6 +36,16 @@ export interface AgentDefinition {
    * guess one and pass an unrecognized flag.
    */
   skipPermissionsArgs?: string[];
+  /**
+   * Arquivos de instruções que este agente lê nativamente ao iniciar, relativos à raiz do projeto
+   * (ex.: "CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"). É por aqui que o contexto
+   * do projeto atravessa a troca de provedor/modelo: o CLI faz merge de um bloco delimitado nesses
+   * arquivos antes do spawn, então o agente já boota sabendo arquitetura, padrões, decisões e o
+   * histórico das sessões anteriores. Obrigatório (como buildArgs) para que nenhum agente novo
+   * entre no catálogo sem uma decisão explícita sobre onde seu contexto é injetado. Paths devem ser
+   * relativos e não escapar da raiz do projeto.
+   */
+  contextFiles: string[];
 }
 export interface AgentStatus {
   definition: AgentDefinition;
@@ -51,6 +61,41 @@ export interface LastSelection {
 export interface AppConfig {
   providers: Provider[];
   lastSelection?: LastSelection | null;
+}
+
+/** Uma sessão encerrada, registrada para que o próximo modelo — possivelmente em outro provedor —
+ *  continue de onde a anterior parou em vez de ouvir o usuário repetir tudo. Nunca guarda credencial:
+ *  identifica o provedor pelo nome, não pelo id nem pela apiKey. */
+export interface ContextHandoff {
+  at: string; // ISO
+  agentId: AgentId;
+  providerName: string;
+  model: string;
+  summary: string;
+}
+
+/** As quatro coisas que o usuário hoje redigita a cada troca de modelo. Strings vazias e arrays
+ *  vazios são o estado "não preenchido" — o renderizador omite a seção em vez de imprimi-la vazia. */
+export interface ContextSections {
+  architecture: string;
+  patterns: string;
+  goal: string;
+  decisions: string[];
+}
+
+/** Contexto de um projeto, portável entre agentes e provedores. Escopo é o repositório (resolvido
+ *  por `projectPath`), não o provedor — o provedor é a peça intercambiável. */
+export interface ContextPack {
+  id: string;
+  name: string;
+  projectPath: string; // absoluto
+  /** Consentimento explícito para escrever nos arquivos do repositório do usuário. Nasce `false`:
+   *  injetar contexto altera arquivos versionados, então nunca é o default. */
+  injectionEnabled: boolean;
+  sections: ContextSections;
+  handoffs: ContextHandoff[]; // append-only; o teto de renderização vive em context/render.ts
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DoctorCheckResult {

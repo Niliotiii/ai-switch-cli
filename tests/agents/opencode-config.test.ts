@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -95,5 +95,21 @@ describe("opencode-config", () => {
     expect(cfg.provider["ai-switch-acme-ai"].name).toBe("ai-switch-acme-ai");
     // raw-name key must NOT exist (the bug this fixes)
     expect(cfg.provider["ai-switch-Acme AI"]).toBeUndefined();
+  });
+
+  it("syncOpencodeProvider grava o arquivo novo com permissão 0600 (o JSON carrega apiKey em texto puro)", async () => {
+    const { syncOpencodeProvider, resolveOpencodeConfigPath } = await import("../../src/agents/opencode-config.js");
+    syncOpencodeProvider(provider, "GLM-5.2");
+    expect(statSync(resolveOpencodeConfigPath()).mode & 0o777).toBe(0o600);
+  });
+
+  it("syncOpencodeProvider aperta a permissão de um opencode.json pré-existente e mundo-legível", async () => {
+    const { syncOpencodeProvider, resolveOpencodeConfigPath } = await import("../../src/agents/opencode-config.js");
+    const cfgPath = resolveOpencodeConfigPath();
+    mkdirSync(path.dirname(cfgPath), { recursive: true });
+    writeFileSync(cfgPath, JSON.stringify({ $schema: "https://opencode.ai/config.json", provider: {} }, null, 2));
+    chmodSync(cfgPath, 0o644); // simula um opencode.json criado pelo próprio opencode, mundo-legível
+    syncOpencodeProvider(provider, "GLM-5.2");
+    expect(statSync(cfgPath).mode & 0o777).toBe(0o600);
   });
 });

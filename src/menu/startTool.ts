@@ -13,7 +13,9 @@ import { promptChoiceWithBack, promptConfirm, promptText } from "../ui/prompts.j
 import { theme } from "../ui/theme.js";
 import type { AgentDefinition, AgentId, ContextPack, Provider } from "../types.js";
 
-const LAST_USED = "ai-switch:last-used";
+// Sentinel value for the "★ last used" shortcut choice, same NUL-delimited pattern as `BACK` in
+// ui/prompts.ts — a real agentId is never NUL-delimited, so this can't collide with one.
+const LAST_USED = "\0ai-switch:last-used\0";
 
 /** Per-session memory of the user's last skip-permissions choice for each agent. Lets the
  *  last-selection shortcut pre-select the same answer so a repeat run is one Enter.

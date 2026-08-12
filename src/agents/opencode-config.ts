@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import type { Provider } from "../types.js";
@@ -51,6 +52,25 @@ export function syncOpencodeProvider(provider: Provider, model: string): void {
   if (!config.provider) config.provider = {};
   // Idempotent: overwrite only the ai-switch-<slug> key; preserve $schema + all other providers.
   config.provider[opencodeProviderKey(provider)] = buildOpencodeProviderEntry(provider, model);
-  mkdirSync(path.dirname(cfgPath), { recursive: true });
-  writeFileSync(cfgPath, JSON.stringify(config, null, 2));
+  mkdirSync(path.dirname(cfgPath), { recursive: true, mode: 0o700 });
+
+  // This file carries a plaintext apiKey (see buildOpencodeProviderEntry), same sensitivity as
+  // config/store.ts's config.json — so it gets the same treatment: 0600 (owner-only) instead of
+  // whatever the process umask would otherwise leave it at, and temp file + rename instead of a
+  // direct write so a crash mid-write can't corrupt the user's real opencode.json (shared with the
+  // `opencode` CLI itself, not just ai-switch).
+  const serialized = JSON.stringify(config, null, 2);
+  const tmp = path.join(path.dirname(cfgPath), `.${path.basename(cfgPath)}.ai-switch-tmp-${randomUUID()}`);
+  try {
+    writeFileSync(tmp, serialized, { encoding: "utf-8", mode: 0o600 });
+    renameSync(tmp, cfgPath);
+    // rename() replaces the destination inode, so an existing opencode.json that was already
+    // world-readable (e.g. created by `opencode` itself before ai-switch ever touched it) would
+    // otherwise keep leaking the key we just wrote into it — chmod unconditionally, not just on
+    // first create.
+    chmodSync(cfgPath, 0o600);
+  } catch (error) {
+    rmSync(tmp, { force: true });
+    throw error;
+  }
 }

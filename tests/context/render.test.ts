@@ -173,4 +173,13 @@ describe("renderContextMarkdown", () => {
     expect(out.split(START_MARKER).length - 1).toBe(1);
     expect(out.split(END_MARKER).length - 1).toBe(1);
   });
+
+  describe("containsReservedMarkerText", () => {
+    it("detecta a sintaxe reservada — usado pela UI para avisar antes da remoção silenciosa em stripMarkers", async () => {
+      const { containsReservedMarkerText, START_MARKER, END_MARKER } = await import("../../src/context/render.js");
+      expect(containsReservedMarkerText(`texto com ${START_MARKER} no meio`)).toBe(true);
+      expect(containsReservedMarkerText(`texto com ${END_MARKER} no meio`)).toBe(true);
+      expect(containsReservedMarkerText("texto comum, sem nada de especial")).toBe(false);
+    });
+  });
 });

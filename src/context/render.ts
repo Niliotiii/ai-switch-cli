@@ -28,6 +28,14 @@ function stripMarkers(text: string): string {
   return text.split(START_MARKER).join("").split(END_MARKER).join("");
 }
 
+/** Detecta se `text` contém literalmente um dos marcadores — usado pela UI (contextMenu.ts,
+ *  startTool.ts) para avisar o usuário ANTES de salvar que aquele trecho será removido por
+ *  `stripMarkers` ao renderizar. Sem esse aviso, a remoção acontece de forma correta mas muda o
+ *  texto do usuário sem nenhuma indicação de que isso aconteceu. */
+export function containsReservedMarkerText(text: string): boolean {
+  return text.includes(START_MARKER) || text.includes(END_MARKER);
+}
+
 function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { getProjectDir } from "../config/paths.js";
 import { createContextPack, deleteContextPack, getContextPackForProject, updateContextPack } from "../context/store.js";
-import { renderContextMarkdown } from "../context/render.js";
+import { containsReservedMarkerText, renderContextMarkdown } from "../context/render.js";
 import { promptChoiceWithBack, promptConfirm, promptText } from "../ui/prompts.js";
 import { renderTable } from "../ui/table.js";
 import { theme } from "../ui/theme.js";
@@ -33,10 +33,23 @@ function viewFlow(pack: ContextPack): void {
   console.log(renderContextMarkdown(pack));
 }
 
+/** A sintaxe reservada dos marcadores nunca sobrevive à renderização (render.ts remove qualquer
+ *  ocorrência literal, para nenhum texto do usuário poder criar um 3º marcador ambíguo) — mas a
+ *  remoção em si é silenciosa. Avisar aqui, no ponto de entrada, é o que torna essa mudança visível
+ *  para quem digitou o texto, em vez de ele só notar que "algo desapareceu" ao ver o CLAUDE.md. */
+function warnIfMarkerTextWillBeStripped(value: string): void {
+  if (containsReservedMarkerText(value)) {
+    console.log(
+      theme.fail("Aviso: este texto contém a sintaxe reservada do ai-switch e será removido ao injetar o contexto."),
+    );
+  }
+}
+
 async function editSectionFlow(pack: ContextPack, section: "architecture" | "patterns" | "goal", label: string): Promise<void> {
   const current = pack.sections[section];
   const next = await promptText(`${label} [Enter para manter]:`, undefined, current || undefined);
   const value = next.trim() === "" ? current : next.trim();
+  warnIfMarkerTextWillBeStripped(value);
   updateContextPack(pack.id, { sections: { [section]: value } });
   console.log(theme.ok(`\n${label} atualizado.`));
 }
@@ -44,6 +57,7 @@ async function editSectionFlow(pack: ContextPack, section: "architecture" | "pat
 async function addDecisionFlow(pack: ContextPack): Promise<void> {
   const decision = await promptText("Nova decisão (Enter para cancelar):");
   if (decision.trim() === "") return;
+  warnIfMarkerTextWillBeStripped(decision);
   updateContextPack(pack.id, { sections: { decisions: [...pack.sections.decisions, decision.trim()] } });
   console.log(theme.ok("\nDecisão adicionada."));
 }

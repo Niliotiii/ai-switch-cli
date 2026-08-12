@@ -81,6 +81,26 @@ describe("contextMenuFlow", () => {
     vi.resetModules();
   });
 
+  it("editar seção com a sintaxe reservada dos marcadores avisa o usuário (a remoção em render.ts é silenciosa sem isso)", async () => {
+    const promptChoiceWithBack = vi
+      .fn()
+      .mockResolvedValueOnce("edit-architecture")
+      .mockResolvedValueOnce(null);
+    vi.doMock("../../src/ui/prompts.js", () => ({
+      promptChoiceWithBack,
+      promptText: vi.fn(async () => "texto com <!-- ai-switch:context:end --> dentro"),
+      promptConfirm: vi.fn(async () => true),
+    }));
+    const { getContextPackForProject } = await import("../../src/context/store.js");
+    (getContextPackForProject as unknown as ReturnType<typeof vi.fn>).mockReturnValue(pack());
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...a) => { logs.push(a.join(" ")); });
+    const { contextMenuFlow } = await import("../../src/menu/contextMenu.js");
+    await contextMenuFlow();
+    expect(logs.join("\n")).toMatch(/removido ao injetar/);
+    vi.resetModules();
+  });
+
   it("ativar injeção lista os destinos, exige confirmação e persiste injectionEnabled: true", async () => {
     const promptChoiceWithBack = vi
       .fn()

@@ -98,6 +98,31 @@ describe("mergeContextBlock", () => {
     const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
     expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
   });
+
+  it("dois STARTs antes de um único END: dá throw em vez de engolir silenciosamente o conteúdo entre eles", async () => {
+    // Bug crítico da rodada 2: BLOCK_RE (lazy) casa do primeiro START até o END MAIS PRÓXIMO à
+    // frente, mesmo que exista um segundo START no meio — o "strippedOfPairs" da rodada 2 via esse
+    // match único como "um par válido" e não sobrava nenhum marcador, então não lançava. O replace()
+    // real então apagava TUDO entre os dois STARTs (incluindo prosa do usuário) junto com o bloco
+    // antigo, sem throw e sem aviso. A validação de alternância estrita pega isso: S,S,E não é uma
+    // sequência válida (um START não pode ser seguido por outro START sem um END no meio).
+    const { mergeContextBlock } = await import("../../src/context/inject.js");
+    const existing = `${START_MARKER}\nfoo\n${START_MARKER}\nprosa importante do usuário\n${END_MARKER}`;
+    const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
+    expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
+  });
+
+  it("é ESTRITO por design: um END/START mencionado como texto solto na prosa do usuário também dá throw (nunca perde dados por engano)", async () => {
+    // A rodada 1 (BLOCK_RE.test — "existe ao menos um par válido") deixaria passar este arquivo,
+    // porque o par real (START...OLD...END) de fato casa. Mas isso é o mesmo mecanismo frágil que
+    // permite o bug acima: sem validar a alternância completa, não há garantia de que "existe um
+    // match" implica "todo marcador no arquivo pertence a um par". Preferir lançar aqui (pedindo
+    // correção manual) a arriscar o cenário do teste anterior é a troca deliberada deste módulo.
+    const { mergeContextBlock } = await import("../../src/context/inject.js");
+    const existing = `# Docs\n\nO marcador de fechamento se parece com \`${END_MARKER}\`.\n\n${START_MARKER}\nOLD\n${END_MARKER}\n`;
+    const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
+    expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
+  });
 });
 
 describe("injectContext", () => {

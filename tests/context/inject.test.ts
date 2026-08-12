@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -88,6 +88,16 @@ describe("mergeContextBlock", () => {
     expect(merged).toContain("meio");
     expect(merged).toContain("NOVO");
   });
+
+  it("dois pares válidos seguidos de um START pendente sem fim: dá throw (o START extra não pode ficar órfão em silêncio)", async () => {
+    // Sem checar o que sobra depois de remover os pares casados, esse START pendente no fim não
+    // afeta o replace() dos dois pares válidos — a função processaria os dois pares normalmente e
+    // deixaria o terceiro START solto no arquivo, sem nunca avisar que ele existe.
+    const { mergeContextBlock } = await import("../../src/context/inject.js");
+    const existing = `${START_MARKER}\nA\n${END_MARKER}\nmeio\n${START_MARKER}\nB\n${END_MARKER}\n${START_MARKER}`;
+    const block = `${START_MARKER}\nNOVO\n${END_MARKER}`;
+    expect(() => mergeContextBlock(existing, block)).toThrow(/manual/i);
+  });
 });
 
 describe("injectContext", () => {
@@ -116,6 +126,17 @@ describe("injectContext", () => {
     const { injectContext } = await import("../../src/context/inject.js");
     expect(() => injectContext(pack(), agentStub(["../../etc/passwd"]))).toThrow(/escapa da raiz do projeto/);
     expect(existsSync(path.join(path.dirname(tmpDir), "etc", "passwd"))).toBe(false);
+  });
+
+  it("preserva a permissão do arquivo existente através do write atômico (temp file + rename)", async () => {
+    const { injectContext } = await import("../../src/context/inject.js");
+    const file = path.join(tmpDir, "CLAUDE.md");
+    writeFileSync(file, "# Instruções manuais\n", "utf-8");
+    chmodSync(file, 0o640);
+    injectContext(pack(), agentStub(["CLAUDE.md"]));
+    // rename() substitui o inode inteiro — sem restaurar o modo explicitamente, o arquivo herdaria
+    // a permissão padrão do temp file recém-criado em vez do 0640 que o usuário escolheu.
+    expect(statSync(file).mode & 0o777).toBe(0o640);
   });
 
   it("preserva prosa preexistente do usuário", async () => {

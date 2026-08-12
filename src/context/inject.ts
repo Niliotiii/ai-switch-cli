@@ -33,14 +33,16 @@ export function mergeContextBlock(existing: string | null, block: string): strin
   if (existing === null) return `${block}\n`;
 
   const hasStart = existing.includes(START_MARKER);
-  const hasEnd = existing.includes(END_MARKER);
-  // Um START sem par de END encontrável pelo BLOCK_RE cobre não só "START sem END" como "END
-  // aparece antes de um START sem fim" — nesse segundo caso hasStart e hasEnd são ambos true, mas
-  // o regex START→END não casa nada porque não há END *depois* do START. Sem esse teste, o código
-  // caía direto no replace(), não substituía nada (nenhum match) e retornava o arquivo inalterado
-  // sem avisar — perda silenciosa do bloco em vez de throw ou prepend.
-  const wellFormedPair = new RegExp(BLOCK_RE.source).test(existing);
-  if ((hasStart || hasEnd) && !wellFormedPair) {
+  // Remove todo par START→END bem formado e olha o que sobra. Qualquer marcador restante significa
+  // que ao menos um START ou END não faz parte de um par válido — truncado, fora de ordem, ou um
+  // START/END extra sem parceiro (ex.: dois pares completos seguidos de um terceiro START sem fim).
+  // Cobre tanto "START sem END" quanto "END aparece antes de um START sem fim" (nesse caso o regex
+  // START→END não casa nada porque não há END *depois* do START) quanto um START pendente sobrando
+  // depois de pares legítimos — sem este teste, qualquer um desses casos caía direto no replace(),
+  // não casava nada e retornava o arquivo inalterado sem avisar: perda silenciosa do bloco novo.
+  const strippedOfPairs = existing.replace(BLOCK_RE, "");
+  const malformed = strippedOfPairs.includes(START_MARKER) || strippedOfPairs.includes(END_MARKER);
+  if (malformed) {
     throw new Error(
       `Marcadores do ai-switch ("${START_MARKER}" / "${END_MARKER}") ausentes, truncados ou fora de ` +
         `ordem — o arquivo parece ter sido editado manualmente. Corrija a região do ai-switch manualmente antes de continuar.`,
@@ -87,13 +89,20 @@ export function injectContext(pack: ContextPack, agent: AgentDefinition): string
 
   for (const file of targets) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const existing = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : null;
+    const fileExists = fs.existsSync(file);
+    const existing = fileExists ? fs.readFileSync(file, "utf-8") : null;
     const merged = mergeContextBlock(existing, block);
     // Temp file + rename instead of a direct write — this is the user's own CLAUDE.md/AGENTS.md
     // (possibly hand-edited, possibly tracked in git); a crash mid-write must never leave it
     // truncated. rename() is atomic on POSIX within the same directory/filesystem.
     const tmp = path.join(path.dirname(file), `.${path.basename(file)}.ai-switch-tmp-${randomUUID()}`);
     fs.writeFileSync(tmp, merged, "utf-8");
+    // rename() replaces the destination inode outright, so the file would otherwise inherit the
+    // temp file's default creation mode instead of whatever the user had (e.g. a chmod'd CLAUDE.md)
+    // — a plain writeFileSync to an existing file never touches its mode, so this preserves that.
+    if (fileExists) {
+      fs.chmodSync(tmp, fs.statSync(file).mode);
+    }
     fs.renameSync(tmp, file);
   }
   return targets;

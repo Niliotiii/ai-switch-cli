@@ -17,7 +17,10 @@ export interface LaunchOptions {
   /** When present, merges this project's context pack into the agent's `contextFiles` before spawn
    *  (no-op if `pack.injectionEnabled` is false). A throw here (e.g. an orphaned marker in the
    *  target file) propagates and aborts the launch — the caller decides whether to retry without
-   *  context, launchAgent itself never launches silently without the context it was asked to inject. */
+   *  context, launchAgent itself never launches silently without the context it was asked to inject.
+   *  `startTool.ts` deliberately does NOT use this field — it calls `injectContext` directly so its
+   *  own try/catch wraps injection alone, not the whole launch (including the spawn). This option
+   *  exists for callers that want injection folded into a single call (see tests/agents/launch.test.ts). */
   context?: ContextPack;
 }
 

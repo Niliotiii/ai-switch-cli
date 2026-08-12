@@ -117,6 +117,30 @@ describe("agent definition fields", () => {
   });
 });
 
+describe("contextFiles (injeção de contexto entre provedores)", () => {
+  it("cada agente declara o arquivo de instruções que lê nativamente", () => {
+    expect(getAgentDefinition("claude-code").contextFiles).toEqual(["CLAUDE.md"]);
+    expect(getAgentDefinition("codex").contextFiles).toEqual(["AGENTS.md"]);
+    expect(getAgentDefinition("opencode").contextFiles).toEqual(["AGENTS.md"]);
+    // Só o caminho documentado do Copilot. `copilot` não está instalado para verificar se o CLI
+    // também lê AGENTS.md, e o plano proíbe adivinhar (mesma postura de skipPermissionsArgs).
+    expect(getAgentDefinition("copilot").contextFiles).toEqual([".github/copilot-instructions.md"]);
+  });
+
+  it("todo agente tem contextFiles: array não-vazio de paths relativos", () => {
+    for (const a of listAgentDefinitions()) {
+      expect(Array.isArray(a.contextFiles), `${a.id} deve declarar contextFiles`).toBe(true);
+      expect(a.contextFiles.length).toBeGreaterThan(0);
+      for (const file of a.contextFiles) {
+        expect(typeof file).toBe("string");
+        // Relativo à raiz do projeto — nunca absoluto e nunca escapando para fora do repo.
+        expect(file.startsWith("/")).toBe(false);
+        expect(file.includes("..")).toBe(false);
+      }
+    }
+  });
+});
+
 describe("skipPermissionsArgs (modo sem aprovação)", () => {
   it("claude-code usa --dangerously-skip-permissions", () => {
     expect(getAgentDefinition("claude-code").skipPermissionsArgs).toEqual(["--dangerously-skip-permissions"]);

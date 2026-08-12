@@ -150,16 +150,26 @@ describe("skipPermissionsArgs (modo sem aprovação)", () => {
     expect(getAgentDefinition("codex").skipPermissionsArgs).toEqual(["--full-auto"]);
   });
 
-  it("opencode usa --auto", () => {
-    expect(getAgentDefinition("opencode").skipPermissionsArgs).toEqual(["--auto"]);
+  it("opencode não declara skipPermissionsArgs (--auto não existe na CLI real e travava o launch)", () => {
+    // Verificado rodando `opencode -m x/y --auto` de verdade (v1.16.2): a flag não existe para o
+    // modo TUI padrão, yargs imprime --help e sai com código 1 antes da TUI nem abrir. Sem uma flag
+    // real equivalente para esse modo, o correto é não declarar nenhuma — askSkipPermissions() já
+    // trata skipPermissionsArgs ausente como "este agente não suporta o modo sem aprovação".
+    expect(getAgentDefinition("opencode").skipPermissionsArgs).toBeUndefined();
   });
 
   it("copilot usa --yolo (alias de --allow-all, combina allow-all-tools + paths + urls)", () => {
     expect(getAgentDefinition("copilot").skipPermissionsArgs).toEqual(["--yolo"]);
   });
 
-  it("todos os 4 agentes suportam skipPermissionsArgs", () => {
+  it("todos os agentes com uma flag real de skip-permissions a declaram (opencode é a exceção deliberada)", () => {
+    // opencode não tem hoje uma flag de skip-permissions válida para o modo TUI que o ai-switch usa
+    // (ver o comentário em catalog.ts) — deixar sem declarar é o correto, não uma lacuna a preencher.
     for (const a of listAgentDefinitions()) {
+      if (a.id === "opencode") {
+        expect(a.skipPermissionsArgs).toBeUndefined();
+        continue;
+      }
       expect(a.skipPermissionsArgs, `${a.id} should support skip`).toBeDefined();
     }
   });

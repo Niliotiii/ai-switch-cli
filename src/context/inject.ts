@@ -108,6 +108,29 @@ export function injectContext(pack: ContextPack, agent: AgentDefinition): string
 
   for (const file of targets) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
+
+    // A symlink at `file` pointing outside the project root would make readFileSync below read
+    // whatever the link targets (e.g. a repo shipped with `CLAUDE.md -> ~/.ssh/id_rsa`), and the
+    // merge would copy that content into the new CLAUDE.md written back over the link. rename()
+    // itself never follows the link (it replaces the link's own directory entry), so the linked
+    // file is never overwritten — but its content still gets read and re-embedded into a file
+    // inside the project, which is the actual leak. Refuse before any read happens.
+    let linkStat: fs.Stats | null = null;
+    try {
+      linkStat = fs.lstatSync(file);
+    } catch {
+      linkStat = null; // doesn't exist yet — nothing to check
+    }
+    if (linkStat?.isSymbolicLink()) {
+      const real = fs.realpathSync(file);
+      const realWithSep = real.endsWith(path.sep) ? real : real + path.sep;
+      if (real !== root && !realWithSep.startsWith(rootWithSep)) {
+        throw new Error(
+          `"${file}" é um symlink apontando para fora da raiz do projeto ("${real}") — recusando ler ou sobrescrever por segurança.`,
+        );
+      }
+    }
+
     const fileExists = fs.existsSync(file);
     const existing = fileExists ? fs.readFileSync(file, "utf-8") : null;
     const merged = mergeContextBlock(existing, block);
@@ -116,7 +139,10 @@ export function injectContext(pack: ContextPack, agent: AgentDefinition): string
     // truncated. rename() is atomic on POSIX within the same directory/filesystem.
     const tmp = path.join(path.dirname(file), `.${path.basename(file)}.ai-switch-tmp-${randomUUID()}`);
     try {
-      fs.writeFileSync(tmp, merged, "utf-8");
+      // Explicit mode instead of leaving it to the process umask: a brand-new CLAUDE.md/AGENTS.md
+      // should land at the conventional 0644 (readable, not writable, by group/other) regardless of
+      // what umask the CLI happens to run under, rather than silently inheriting whatever that is.
+      fs.writeFileSync(tmp, merged, { encoding: "utf-8", mode: 0o644 });
       // rename() replaces the destination inode outright, so the file would otherwise inherit the
       // temp file's default creation mode instead of whatever the user had (e.g. a chmod'd
       // CLAUDE.md) — a plain writeFileSync to an existing file never touches its mode, so this

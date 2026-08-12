@@ -80,6 +80,18 @@ async function toggleInjectionFlow(pack: ContextPack): Promise<void> {
     return;
   }
   console.log(theme.dim("\nAtivar a injeção grava um bloco gerado nos arquivos de instruções que cada agente lê ao iniciar."));
+  // O agente trata todo o conteúdo desses arquivos como instrução confiável ao bootar. Se este
+  // projeto for um repositório compartilhado (ou baixado de terceiros), qualquer texto já commitado
+  // dentro dos marcadores do ai-switch — ou colocado ali por outra pessoa com acesso de escrita —
+  // é lido pelo agente como se fosse legítimo. stripMarkers só remove a sintaxe reservada dos
+  // marcadores, não filtra o conteúdo em si; o único controle real é revisar antes de ativar.
+  console.log(
+    theme.fail(
+      "Atenção: o agente trata o conteúdo injetado como instrução confiável. Se este repositório for " +
+        "compartilhado ou vier de terceiros, revise o conteúdo do contexto (e o arquivo de destino) " +
+        "antes de ativar — qualquer pessoa com acesso de escrita ao repo pode ter deixado texto ali.",
+    ),
+  );
   const confirmed = await promptConfirm(`Ativar a injeção de contexto para "${pack.name}"?`, false);
   if (!confirmed) return;
   updateContextPack(pack.id, { injectionEnabled: true });

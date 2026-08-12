@@ -252,4 +252,28 @@ describe("injectContext", () => {
     const written = injectContext(pack(), agentStub(["AGENTS.md", "CLAUDE.md"]));
     expect(written.sort()).toEqual([path.join(tmpDir, "AGENTS.md"), path.join(tmpDir, "CLAUDE.md")].sort());
   });
+
+  it("arquivo novo recebe modo explícito 0644, independente do umask do processo", async () => {
+    const { injectContext } = await import("../../src/context/inject.js");
+    injectContext(pack(), agentStub(["CLAUDE.md"]));
+    const file = path.join(tmpDir, "CLAUDE.md");
+    expect(statSync(file).mode & 0o777).toBe(0o644);
+  });
+
+  it("dá throw e não lê nada se contextFiles apontar (via symlink) para fora da raiz do projeto", async () => {
+    const { symlinkSync, writeFileSync: write, lstatSync } = await import("node:fs");
+    const outsideDir = mkdtempSync(path.join(tmpdir(), "ai-switch-outside-"));
+    const secret = path.join(outsideDir, "secret.txt");
+    write(secret, "SEGREDO\n", "utf-8");
+    const file = path.join(tmpDir, "CLAUDE.md");
+    symlinkSync(secret, file);
+
+    const { injectContext } = await import("../../src/context/inject.js");
+    expect(() => injectContext(pack(), agentStub(["CLAUDE.md"]))).toThrow(/symlink.*fora da raiz do projeto/);
+    // O symlink não deve ter sido substituído nem seu alvo sobrescrito.
+    expect(lstatSync(file).isSymbolicLink()).toBe(true);
+    expect(readFileSync(secret, "utf-8")).toBe("SEGREDO\n");
+
+    rmSync(outsideDir, { recursive: true, force: true });
+  });
 });
